@@ -1,0 +1,35 @@
+# HybridMVS - Hybrid 3D Reconstruction System
+# ============================================
+#
+# Core dependencies for algorithm modules.
+# Install with: pip install -r requirements.txt
+
+# PyTorch (install separately with CUDA support)
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# Computer vision and image processing
+opencv-python>=4.8.0
+numpy>=1.21.0
+scipy>=1.7.0
+scikit-image>=0.19.0
+
+# 3D geometry and mesh processing
+open3d>=0.17.0
+trimesh>=3.21.0
+plyfile>=1.0.0
+
+# Utilities
+tqdm>=4.64.0
+matplotlib>=3.5.0
+pillow>=9.0.0
+
+# For COLMAP_engine auto-download
+# (no extra dependencies needed, uses stdlib)
+
+# Note: COLMAP must be installed separately.
+# Windows: https://github.com/colmap/colmap/releases
+# Linux: sudo apt install colmap
+# macOS: brew install colmap

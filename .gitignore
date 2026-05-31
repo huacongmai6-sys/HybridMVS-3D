@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Backend runtime
+backend/results/
+backend/uploads/
+backend/*.db
+backend/instance/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Checkpoints (large files)
+checkpoints/*.ckpt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+test_output/
+test_colmap_*/
+test_mvs_v*/
+test_mvs_final/
+test_stage2/
+
+# Debug scripts (auto-generated)
+audit_inference*.py
+experiments.py
+visualize_depth.py
+*.png
