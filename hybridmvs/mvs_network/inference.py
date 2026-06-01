@@ -78,6 +78,14 @@ class MVSInference:
                 min_depth=self.config.min_depth,
                 max_depth=self.config.max_depth,
             )
+        elif self.config.model_type == "patchmatchnet":
+            # Uses official PatchMatchNet from hybridmvs.PatchmatchNet
+            from .patchmatchnet_adapter import PatchMatchNetInference
+            self._patchmatch_adapter = PatchMatchNetInference(
+                checkpoint_path=self.config.checkpoint_path,
+                device=str(self.device),
+            )
+            return self._patchmatch_adapter.model
         else:
             raise ValueError(f"Unknown model type: {self.config.model_type}")
 
@@ -209,6 +217,17 @@ class MVSInference:
         """
         self.model.eval()
 
+        # PatchMatchNet uses a different interface (raw images, not preprocessed tensors)
+        if self.config.model_type == "patchmatchnet":
+            adapter = getattr(self, '_patchmatch_adapter', None)
+            if adapter is None:
+                raise RuntimeError("PatchMatchNet adapter not initialized")
+            depth_np, conf_np = adapter.run(
+                images, intrinsics, extrinsics, ref_idx,
+                depth_min, depth_max, original_size,
+            )
+            return depth_np, conf_np
+
         batch = self.preprocess_images(
             images, intrinsics, extrinsics, ref_idx,
             depth_min, depth_max,
@@ -230,19 +249,23 @@ class MVSInference:
         prob_vol = output['prob_volume'].squeeze(0)     # [1, D, H, W]
         depth_vals = output['depth_values'].squeeze(0)  # [D] or [D, H, W]
 
+        # PatchMatchNet provides direct confidence, use it if available
+        if 'confidence' in output:
+            conf_raw = output['confidence'].squeeze(0).squeeze(0)  # [H, W]
+            # Normalize to [0, 1]
+            confidence = conf_raw / (conf_raw.max() + 1e-8)
+
         # Compute confidence.
         # If cascade provided stage 2 prob (global depth range), use that —
         # it gives meaningful confidence. Otherwise use entropy on current prob.
-        prob_s2 = output.get('prob_volume_stage2')
-        if prob_s2 is not None:
-            # Stage 2: global depth range, 128 planes at 1/4 resolution
+        elif output.get('prob_volume_stage2') is not None:
+            prob_s2 = output['prob_volume_stage2']
             prob_s2 = prob_s2.squeeze(0).squeeze(0)  # [D2, H/4, W/4]
             H_full, W_full = depth.shape
             prob_s2_up = F.interpolate(
                 prob_s2.unsqueeze(0), size=(H_full, W_full),
                 mode='bilinear', align_corners=False,
             ).squeeze(0)  # [D2, H, W]
-            # Entropy-based confidence on global-range distribution
             D2 = prob_s2_up.shape[0]
             entropy = -(prob_s2_up * torch.log(prob_s2_up + 1e-8)).sum(dim=0)  # [H, W]
             confidence = 1.0 - entropy / np.log(D2)

@@ -31,11 +31,11 @@ COLMAP_BINARY = os.environ.get(
 )
 
 # MVS Model
-MVS_MODEL_TYPE = os.environ.get("MVS_MODEL_TYPE", "casmvsnet")
+MVS_MODEL_TYPE = os.environ.get("MVS_MODEL_TYPE", "patchmatchnet")
 MVS_IMAGE_WIDTH = int(os.environ.get("MVS_IMAGE_WIDTH", "640"))
 MVS_IMAGE_HEIGHT = int(os.environ.get("MVS_IMAGE_HEIGHT", "512"))
 GPU_INDEX = int(os.environ.get("GPU_INDEX", "0"))
 MVS_CHECKPOINT = os.environ.get(
     "MVS_CHECKPOINT",
-    os.path.join(PROJECT_DIR, "checkpoints", "casmvsnet_dtu.pth"),
+    os.path.join(PROJECT_DIR, "checkpoints", "model_000007.ckpt"),
 )

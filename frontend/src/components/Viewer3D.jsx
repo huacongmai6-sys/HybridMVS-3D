@@ -111,25 +111,33 @@ export default function Viewer3D({ modelUrl }) {
       )}
       <Canvas
         camera={{ position: pointData
-          ? [pointData.center[0] + pointData.extent * 0.8,
-             pointData.center[1] + pointData.extent * 0.6,
-             pointData.center[2] + pointData.extent * 0.8]
-          : [3, 2, 3],
+          ? [pointData.center[0] + pointData.extent * 1.5,
+             pointData.center[1] + pointData.extent * 1.5,
+             pointData.center[2] + pointData.extent * 1.5]
+          : [3, 3, 3],
+          up: [0, -1, 0],  // flip Y-axis: COLMAP Y-up → screen Y-down
           fov: 50 }}
         gl={{ antialias: true }}
-        style={{ background: "#1a1a2e" }}
+        style={{ background: "#1a1a2e", cursor: "grab" }}
       >
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 10, 5]} intensity={0.8} />
         <OrbitControls
           target={pointData ? pointData.center : [0, 0, 0]}
           enableDamping
+          dampingFactor={0.1}
           enablePan
           enableZoom
+          enableRotate
+          rotateSpeed={1.0}
+          panSpeed={1.0}
+          zoomSpeed={1.0}
           minPolarAngle={0}
           maxPolarAngle={Math.PI}
-          minDistance={pointData ? pointData.extent * 0.05 : 0.05}
-          maxDistance={pointData ? pointData.extent * 10 : 50}
+          minAzimuthAngle={-Infinity}
+          maxAzimuthAngle={Infinity}
+          minDistance={pointData ? pointData.extent * 0.02 : 0.02}
+          maxDistance={pointData ? pointData.extent * 20 : 100}
         />
         {pointData && (
           <points>

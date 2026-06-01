@@ -109,11 +109,14 @@ class HybridReconstructionPipeline:
                 checkpoint_path=ckpt,
             )
         self.mvs_config = mvs_config
-        self.mvs_inference = MVSInference(mvs_config)
+        # Ensure checkpoint_path is set (may be missing from user-provided config)
+        if self.checkpoint_path and not self.mvs_config.checkpoint_path:
+            self.mvs_config.checkpoint_path = self.checkpoint_path
+        self.mvs_inference = MVSInference(self.mvs_config)
 
         self.dense_fusion = DenseFusion(
-            consistency_threshold=0.01,
-            min_views=3,
+            consistency_threshold=0.05,
+            min_views=2,
         )
 
         logger.info("HybridReconstructionPipeline initialized")

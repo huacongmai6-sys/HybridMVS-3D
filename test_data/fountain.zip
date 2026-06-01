@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message><BucketName>openmvg</BucketName><RequestId>8DXXXSE4B3G0XKER</RequestId><HostId>NxkBJqmNRJhBSCIkj2PQHGPhSwSkV82rxTA79s3kmLPRNpPJyIJ+ldJPn7zmOAJ+0Dia6L82jyjIyGj/C4+kYz0QAYVyOSh9</HostId></Error>

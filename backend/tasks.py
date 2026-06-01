@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def run_reconstruction(task_id: str, image_dir: str, quality: str = "high"):
+def run_reconstruction(task_id: str, image_dir: str, quality: str = "high", mode: str = "colmap"):
     """
     Run the full hybrid reconstruction pipeline synchronously.
 
@@ -29,6 +29,7 @@ def run_reconstruction(task_id: str, image_dir: str, quality: str = "high"):
         task_id: Database task UUID.
         image_dir: Directory containing input images.
         quality: COLMAP feature quality.
+        mode: "colmap" (COLMAP PatchMatch, reliable) or "mvs" (CasMVSNet, experimental).
     """
     from models import db, Task, init_db
     from hybridmvs.pipeline import HybridReconstructionPipeline
@@ -72,7 +73,7 @@ def run_reconstruction(task_id: str, image_dir: str, quality: str = "high"):
                 image_size=(MVS_IMAGE_WIDTH, MVS_IMAGE_HEIGHT),
                 gpu_index=GPU_INDEX,
                 checkpoint_path=MVS_CHECKPOINT,
-                use_colmap_dense=False,
+                use_colmap_dense=(mode == "colmap"),
             )
 
             result = pipeline.run(
@@ -107,11 +108,11 @@ def run_reconstruction(task_id: str, image_dir: str, quality: str = "high"):
             return {"status": "failed", "task_id": task_id, "error": str(e)}
 
 
-def run_reconstruction_async(task_id: str, image_dir: str, quality: str = "high"):
+def run_reconstruction_async(task_id: str, image_dir: str, quality: str = "high", mode: str = "colmap"):
     """Run reconstruction in a background thread."""
     thread = threading.Thread(
         target=run_reconstruction,
-        args=(task_id, image_dir, quality),
+        args=(task_id, image_dir, quality, mode),
         daemon=True,
     )
     thread.start()

@@ -68,6 +68,7 @@ def create_task():
 
     files = request.files.getlist("images")
     quality = request.form.get("quality", "high")
+    mode = request.form.get("mode", "colmap")  # "colmap" or "mvs"
 
     valid_files = [f for f in files if f.filename and _allowed_file(f.filename)]
     if not valid_files:
@@ -96,7 +97,7 @@ def create_task():
 
     # Start reconstruction in background thread
     from tasks import run_reconstruction_async
-    run_reconstruction_async(task_id, image_dir, quality)
+    run_reconstruction_async(task_id, image_dir, quality, mode)
     logger.info(f"Task {task_id} started in background thread")
 
     return jsonify({"task": task.to_dict()}), 202
@@ -118,7 +119,8 @@ def run_task_sync(task_id):
         return jsonify({"error": "Upload directory not found"}), 400
 
     from tasks import run_reconstruction
-    result = run_reconstruction(task_id, image_dir, quality="high")
+    mode = request.json.get("mode", "colmap") if request.is_json else request.form.get("mode", "colmap")
+    result = run_reconstruction(task_id, image_dir, quality="high", mode=mode)
     return jsonify(result)
 
 
