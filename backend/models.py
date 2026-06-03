@@ -25,6 +25,7 @@ class Task(db.Model):
     dense_obj = db.Column(db.String(500), default="")
     sparse_ply = db.Column(db.String(500), default="")
     stats_json = db.Column(db.String(500), default="")
+    depth_previews = db.Column(db.Text, default="")  # JSON array of preview metadata
 
     def to_dict(self):
         return {
@@ -40,7 +41,16 @@ class Task(db.Model):
             "dense_obj": self.dense_obj,
             "sparse_ply": self.sparse_ply,
             "stats_json": self.stats_json,
+            "depth_previews": self._parse_depth_previews(),
         }
+
+    def _parse_depth_previews(self):
+        """Parse depth_previews JSON string, or return empty list."""
+        import json
+        try:
+            return json.loads(self.depth_previews) if self.depth_previews else []
+        except (json.JSONDecodeError, TypeError):
+            return []
 
 
 def init_db(app):

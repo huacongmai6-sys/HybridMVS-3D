@@ -188,6 +188,140 @@ class FormatConverter:
         return paths
 
     @staticmethod
+    def read_colmap_depth_map(bin_path: str) -> np.ndarray:
+        """
+        Read a COLMAP .geometric.bin or .photometric.bin depth map.
+
+        COLMAP stores dense stereo depth maps in raw binary format:
+          width (int32), height (int32), depth_channels (int32),
+          then width*height float32 depth values (row-major).
+
+        Returns:
+            [H, W] float32 depth map. Invalid depths are 0 or NaN.
+        """
+        with open(bin_path, 'rb') as f:
+            w = np.frombuffer(f.read(4), dtype=np.int32)[0]
+            h = np.frombuffer(f.read(4), dtype=np.int32)[0]
+            channels = np.frombuffer(f.read(4), dtype=np.int32)[0]
+            data = np.frombuffer(f.read(), dtype=np.float32)
+
+        expected = w * h * channels
+        if len(data) != expected:
+            raise ValueError(
+                f"Corrupt depth map {bin_path}: expected {expected} floats, got {len(data)}"
+            )
+
+        depth = data.reshape(h, w).astype(np.float32) if channels == 1 else data.reshape(h, w, channels)
+        # Mask invalid values
+        depth[~np.isfinite(depth)] = 0.0
+        depth[depth < 0] = 0.0
+        return depth
+
+    @staticmethod
+    def depth_to_color_preview(
+        depth: np.ndarray,
+        max_depth: float = None,
+        colormap: int = cv2.COLORMAP_TURBO,
+    ) -> np.ndarray:
+        """
+        Convert a float32 depth map to a pseudo-color RGB preview image.
+
+        Args:
+            depth: [H, W] float32 depth values.
+            max_depth: Maximum depth for normalization. If None, uses 95th percentile.
+            colormap: OpenCV colormap (default: TURBO for perceptually uniform).
+
+        Returns:
+            [H, W, 3] uint8 RGB image.
+        """
+        valid = depth > 0
+        if not valid.any():
+            return np.zeros((*depth.shape, 3), dtype=np.uint8)
+
+        if max_depth is None:
+            max_depth = float(np.percentile(depth[valid], 95))
+
+        normalized = np.clip(depth / max(max_depth, 1e-6), 0.0, 1.0).astype(np.float32)
+        # Set invalid regions to 0 (black in most colormaps)
+        normalized[~valid] = 0.0
+
+        colored = cv2.applyColorMap(
+            (normalized * 255).astype(np.uint8), colormap
+        )
+        return cv2.cvtColor(colored, cv2.COLOR_BGR2RGB)
+
+    @staticmethod
+    def generate_depth_previews(
+        depth_maps: List[np.ndarray],
+        output_dir: str,
+        image_names: List[str] = None,
+        max_samples: int = 5,
+        max_size: int = 400,
+    ) -> List[dict]:
+        """
+        Generate pseudo-color depth map preview PNGs.
+
+        Args:
+            depth_maps: List of [H, W] float32 depth maps.
+            output_dir: Directory for output PNG files.
+            image_names: Corresponding source image names.
+            max_samples: Maximum number of preview images to generate.
+            max_size: Max dimension (width or height) for thumbnail.
+
+        Returns:
+            List of dicts with keys: name, path, shape, min_depth, max_depth.
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        previews = []
+
+        n = len(depth_maps)
+        if n == 0:
+            return previews
+
+        # Sample evenly
+        indices = np.linspace(0, n - 1, min(max_samples, n), dtype=int).tolist()
+        # Deduplicate while preserving order
+        seen = set()
+        indices = [i for i in indices if not (i in seen or seen.add(i))]
+
+        for idx in indices:
+            depth = depth_maps[idx]
+            valid_depths = depth[depth > 0]
+
+            if len(valid_depths) == 0:
+                continue
+
+            d_max = float(np.percentile(valid_depths, 95))
+            d_min = float(valid_depths.min())
+
+            colored = FormatConverter.depth_to_color_preview(depth, max_depth=d_max)
+
+            # Resize thumbnail
+            h, w = colored.shape[:2]
+            if max(h, w) > max_size:
+                scale = max_size / max(h, w)
+                colored = cv2.resize(colored, (int(w * scale), int(h * scale)),
+                                     interpolation=cv2.INTER_AREA)
+
+            name = image_names[idx] if image_names and idx < len(image_names) else f"depth_{idx:04d}"
+            base = os.path.splitext(name)[0]
+            filename = f"{base}.png"
+            path = os.path.join(output_dir, filename)
+            cv2.imwrite(path, cv2.cvtColor(colored, cv2.COLOR_RGB2BGR))
+
+            previews.append({
+                "name": name,
+                "filename": filename,
+                "index": idx,
+                "shape": [h, w],
+                "min_depth": round(d_min, 3),
+                "max_depth": round(d_max, 3),
+            })
+
+        logger.info(f"Generated {len(previews)} depth previews in {output_dir}")
+        return previews
+
+    @staticmethod
     def _write_pfm(path: str, image: np.ndarray) -> None:
         """Write a float32 array as a PFM file."""
         h, w = image.shape

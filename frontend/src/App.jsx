@@ -1,6 +1,7 @@
 import { useState } from "react";
 import UploadPanel from "./components/UploadPanel";
 import ProgressPanel from "./components/ProgressPanel";
+import DepthMapPanel from "./components/DepthMapPanel";
 import Viewer3D from "./components/Viewer3D";
 import { getDownloadUrl } from "./api";
 import "./App.css";
@@ -21,7 +22,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>HybridMVS</h1>
+        <h1><span>Hybrid</span>MVS</h1>
         <span className="subtitle">基于COLMAP与深度学习的混合式三维重建系统</span>
       </header>
 
@@ -31,6 +32,13 @@ export default function App() {
 
           {taskId && (
             <ProgressPanel taskId={taskId} onComplete={handleComplete} />
+          )}
+
+          {completedTask && completedTask.depth_previews?.length > 0 && (
+            <DepthMapPanel
+              depthPreviews={completedTask.depth_previews}
+              taskId={completedTask.id}
+            />
           )}
 
           {completedTask && (

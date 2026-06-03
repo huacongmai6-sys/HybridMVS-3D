@@ -460,13 +460,44 @@ class HybridReconstructionPipeline:
             sparse, sparse_path, fmt="ply"
         )
 
-        # Save depth maps
+        # Save depth maps (MVS path) or read from COLMAP (dense path)
         depth_dir = os.path.join(output_dir, "depth_maps")
         FormatConverter.save_depth_maps(
             result['depth_maps'], depth_dir,
             image_names=result.get('image_names'),
             fmt="npy",
         )
+
+        # ── Generate depth map preview images ────────────────────
+        preview_dir = os.path.join(output_dir, "depth_previews")
+        depth_maps_for_preview = result.get('depth_maps', [])
+
+        # COLMAP dense path: read .geometric.bin files
+        if self.use_colmap_dense and len(depth_maps_for_preview) == 0:
+            stereo_depth_dir = os.path.join(
+                self.colmap.dense_dir, "stereo", "depth_maps"
+            )
+            if os.path.isdir(stereo_depth_dir):
+                import glob as _glob
+                bin_files = sorted(_glob.glob(os.path.join(stereo_depth_dir, "*.geometric.bin")))
+                depth_maps_for_preview = []
+                for bf in bin_files:
+                    try:
+                        dm = FormatConverter.read_colmap_depth_map(bf)
+                        depth_maps_for_preview.append(dm)
+                    except Exception as e:
+                        logger.warning(f"Failed to read COLMAP depth map {bf}: {e}")
+
+        if len(depth_maps_for_preview) > 0:
+            previews = FormatConverter.generate_depth_previews(
+                depth_maps_for_preview,
+                preview_dir,
+                image_names=result.get('image_names'),
+                max_samples=5,
+                max_size=400,
+            )
+            paths['depth_previews'] = previews
+            paths['depth_previews_dir'] = preview_dir
 
         # Save stats
         stats_path = os.path.join(output_dir, "reconstruction_stats.json")

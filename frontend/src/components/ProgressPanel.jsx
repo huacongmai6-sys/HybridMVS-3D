@@ -4,16 +4,29 @@ import { getTask } from "../api";
 const STAGE_NAMES = {
   pending: "等待开始...",
   uploading: "正在上传图片...",
+  // Video preprocessing
+  video_processing: "正在处理视频...",
+  video_extract: "正在从视频提取帧...",
+  video_select: "正在筛选高质量帧...",
+  video_finalize: "正在保存帧...",
+  video_complete: "视频预处理完成",
+  // SfM
   sfm_extract_features: "正在提取图像特征",
   sfm_match_features: "正在匹配特征点",
   sfm_sparse: "正在计算相机位姿 (SfM)",
   sfm_complete: "相机位姿估计完成",
   convert: "正在准备深度学习数据",
+  conversion_complete: "数据转换完成",
+  // Dense
+  undistort: "正在去畸变处理...",
+  patch_match: "PatchMatch 立体匹配中...",
+  stereo_fusion: "正在融合深度图...",
   mvs_depth: "AI 模型深度估计中",
   mvs_complete: "深度图生成完成",
   fusion: "正在融合生成三维点云",
   complete: "重建完成！",
   failed: "重建失败",
+  error: "发生错误",
 };
 
 export default function ProgressPanel({ taskId, onComplete }) {

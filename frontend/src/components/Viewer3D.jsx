@@ -1,12 +1,65 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Html } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+
+function Scene({ pointData, autoRotate, orbitRef }) {
+  const pointsRef = useRef();
+
+  // Auto-rotation via OrbitControls ref
+  useEffect(() => {
+    if (orbitRef?.current) {
+      orbitRef.current.autoRotate = autoRotate;
+      orbitRef.current.autoRotateSpeed = 0.6;
+    }
+  }, [autoRotate, orbitRef]);
+
+  if (!pointData) return null;
+
+  return (
+    <>
+      <ambientLight intensity={0.45} />
+      <directionalLight position={[8, 15, 8]} intensity={0.6} />
+      <directionalLight position={[-5, -3, -5]} intensity={0.2} />
+      <OrbitControls
+        ref={orbitRef}
+        target={pointData.center}
+        enableDamping
+        dampingFactor={0.08}
+        enablePan
+        enableZoom
+        enableRotate
+        rotateSpeed={0.8}
+        panSpeed={0.8}
+        zoomSpeed={1.0}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI}
+        minAzimuthAngle={-Infinity}
+        maxAzimuthAngle={Infinity}
+        minDistance={pointData.extent * 0.02}
+        maxDistance={pointData.extent * 15}
+      />
+      <points ref={pointsRef}>
+        <bufferGeometry attach="geometry" {...pointData.geo} />
+        <pointsMaterial
+          attach="material"
+          size={pointData.pointSize}
+          vertexColors
+          sizeAttenuation
+          blending={THREE.NormalBlending}
+          depthWrite
+        />
+      </points>
+    </>
+  );
+}
 
 export default function Viewer3D({ modelUrl }) {
   const [pointData, setPointData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(false);
+  const orbitRef = useRef();
 
   // Load and parse PLY outside of Canvas
   useEffect(() => {
@@ -48,9 +101,13 @@ export default function Viewer3D({ modelUrl }) {
             if (y < ymin) ymin = y; if (y > ymax) ymax = y;
             if (z < zmin) zmin = z; if (z > zmax) zmax = z;
             if (parts.length >= 6) {
-              colors.push(parseInt(parts[3]) / 255, parseInt(parts[4]) / 255, parseInt(parts[5]) / 255);
+              colors.push(
+                parseInt(parts[3]) / 255,
+                parseInt(parts[4]) / 255,
+                parseInt(parts[5]) / 255,
+              );
             } else {
-              colors.push(0.6, 0.6, 0.7);
+              colors.push(0.45, 0.62, 0.91);
             }
             count++;
           }
@@ -60,12 +117,19 @@ export default function Viewer3D({ modelUrl }) {
           cx /= count; cy /= count; cz /= count;
           const extent = Math.max(xmax - xmin, ymax - ymin, zmax - zmin, 1);
           const geo = new THREE.BufferGeometry();
-          geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-          geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-          const pointSize = extent * 0.005;
-          if (active) setPointData({ geo, count, center: [cx, cy, cz], extent, pointSize });
+          geo.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(positions, 3),
+          );
+          geo.setAttribute(
+            "color",
+            new THREE.Float32BufferAttribute(colors, 3),
+          );
+          const pointSize = extent * 0.004;
+          if (active)
+            setPointData({ geo, count, center: [cx, cy, cz], extent, pointSize });
         } else if (active) {
-          setError("点云为空");
+          setError("点云为空 — 没有读取到有效顶点数据");
         }
       })
       .catch((err) => {
@@ -75,81 +139,106 @@ export default function Viewer3D({ modelUrl }) {
         if (active) setLoading(false);
       });
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [modelUrl]);
 
+  // ── Placeholder state ────────────────────────────────
   if (!modelUrl) {
     return (
       <div className="viewer-placeholder">
-        <p>上传图片并开始重建后，三维模型将在此处显示</p>
+        <div className="placeholder-icon">◈</div>
+        <p>上传图片或视频并开始重建<br />三维模型将在此处显示</p>
+        <span className="hint-text">
+          支持 PLY 稠密点云 · 旋转 / 缩放 / 平移
+        </span>
       </div>
     );
   }
 
+  const canvasBg = "#0b1019";
+
   return (
     <div className="viewer-3d" style={{ position: "relative" }}>
-      {loading && (
-        <div style={{ position: "absolute", top: 16, left: "50%", zIndex: 10,
-          transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)",
-          color: "#58a6ff", padding: "8px 20px", borderRadius: 8, fontSize: 14 }}>
-          加载中...
-        </div>
-      )}
-      {error && (
-        <div style={{ position: "absolute", top: 16, left: "50%", zIndex: 10,
-          transform: "translateX(-50%)", background: "rgba(248,81,73,0.2)",
-          color: "#f85149", padding: "8px 20px", borderRadius: 8, fontSize: 14 }}>
-          加载失败: {error}
-        </div>
-      )}
-      {pointData && !loading && (
-        <div style={{ position: "absolute", bottom: 16, left: "50%", zIndex: 10,
-          transform: "translateX(-50%)", background: "rgba(0,0,0,0.7)",
-          color: "#8b949e", padding: "4px 16px", borderRadius: 6, fontSize: 12 }}>
-          {pointData.count.toLocaleString()} 个点 | 范围 {pointData.extent.toFixed(1)}
-        </div>
-      )}
-      <Canvas
-        camera={{ position: pointData
-          ? [pointData.center[0] + pointData.extent * 1.5,
-             pointData.center[1] + pointData.extent * 1.5,
-             pointData.center[2] + pointData.extent * 1.5]
-          : [3, 3, 3],
-          up: [0, -1, 0],  // flip Y-axis: COLMAP Y-up → screen Y-down
-          fov: 50 }}
-        gl={{ antialias: true }}
-        style={{ background: "#1a1a2e", cursor: "grab" }}
-      >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 10, 5]} intensity={0.8} />
-        <OrbitControls
-          target={pointData ? pointData.center : [0, 0, 0]}
-          enableDamping
-          dampingFactor={0.1}
-          enablePan
-          enableZoom
-          enableRotate
-          rotateSpeed={1.0}
-          panSpeed={1.0}
-          zoomSpeed={1.0}
-          minPolarAngle={0}
-          maxPolarAngle={Math.PI}
-          minAzimuthAngle={-Infinity}
-          maxAzimuthAngle={Infinity}
-          minDistance={pointData ? pointData.extent * 0.02 : 0.02}
-          maxDistance={pointData ? pointData.extent * 20 : 100}
-        />
-        {pointData && (
-          <points>
-            <bufferGeometry attach="geometry" {...pointData.geo} />
-            <pointsMaterial
-              attach="material"
-              size={pointData.pointSize}
-              vertexColors
-              sizeAttenuation
-            />
-          </points>
+      {/* ── Top HUD: status badge ───────────────────── */}
+      <div className="viewer-hud viewer-hud-top">
+        {loading && (
+          <div className="viewer-hud-badge">
+            <span className="dot" />
+            加载点云数据...
+          </div>
         )}
+        {error && (
+          <div className="viewer-hud-badge error">
+            <span className="dot" />
+            加载失败: {error}
+          </div>
+        )}
+        {pointData && !loading && (
+          <div className="viewer-hud-badge">
+            <span className="dot" />
+            模型已就绪
+          </div>
+        )}
+      </div>
+
+      {/* ── Bottom HUD: stats + controls ────────────── */}
+      {pointData && !loading && !error && (
+        <div className="viewer-hud viewer-hud-bottom">
+          <div className="viewer-stats">
+            <div className="viewer-stat">
+              顶点
+              <span className="stat-value">
+                {(pointData.count / 1000).toFixed(0)}K
+              </span>
+            </div>
+            <span className="stat-divider">|</span>
+            <div className="viewer-stat">
+              范围
+              <span className="stat-value">
+                {pointData.extent.toFixed(2)}
+              </span>
+            </div>
+            <span className="stat-divider">|</span>
+            <button
+              className={`btn-auto-rotate ${autoRotate ? "active" : ""}`}
+              onClick={() => setAutoRotate((v) => !v)}
+              title={autoRotate ? "停止旋转" : "自动旋转"}
+              style={{
+                background: "none",
+                border: "none",
+                color: autoRotate ? "var(--accent)" : "var(--text-muted)",
+                cursor: "pointer",
+                fontSize: 13,
+                fontFamily: "var(--font-body)",
+                pointerEvents: "auto",
+                padding: "0 4px",
+                transition: "color 0.2s",
+              }}
+            >
+              {autoRotate ? "⟳ 旋转中" : "↻ 旋转"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Canvas
+        camera={{
+          position: pointData
+            ? [
+                pointData.center[0] + pointData.extent * 1.4,
+                pointData.center[1] + pointData.extent * 0.8,
+                pointData.center[2] + pointData.extent * 1.4,
+              ]
+            : [3, 3, 3],
+          up: [0, -1, 0],
+          fov: 50,
+        }}
+        gl={{ antialias: true, alpha: false }}
+        style={{ background: canvasBg, cursor: "grab" }}
+      >
+        <Scene pointData={pointData} autoRotate={autoRotate} orbitRef={orbitRef} />
       </Canvas>
     </div>
   );

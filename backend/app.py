@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from config import (
     SECRET_KEY, DEBUG, UPLOAD_FOLDER, RESULT_FOLDER,
     MAX_CONTENT_LENGTH, ALLOWED_EXTENSIONS,
-    SQLALCHEMY_DATABASE_URI,
+    SQLALCHEMY_DATABASE_URI, VIDEO_ALLOWED_EXTENSIONS,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -49,8 +49,13 @@ from models import db, Task, init_db
 init_db(app)
 
 
-def _allowed_file(filename: str) -> bool:
+def _allowed_image(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _allowed_video(filename: str) -> bool:
+    from config import VIDEO_ALLOWED_EXTENSIONS
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in VIDEO_ALLOWED_EXTENSIONS
 
 
 # ── Health check ──────────────────────────────────────────────
@@ -62,43 +67,88 @@ def health():
 # ── Create task ───────────────────────────────────────────────
 @app.route("/api/tasks", methods=["POST"])
 def create_task():
-    """Upload images and start a reconstruction task."""
-    if "images" not in request.files:
-        return jsonify({"error": "No images provided"}), 400
-
-    files = request.files.getlist("images")
+    """Upload images or a video file and start a reconstruction task."""
     quality = request.form.get("quality", "high")
     mode = request.form.get("mode", "colmap")  # "colmap" or "mvs"
-
-    valid_files = [f for f in files if f.filename and _allowed_file(f.filename)]
-    if not valid_files:
-        return jsonify({"error": "No valid image files (png, jpg, jpeg, tiff, bmp)"}), 400
+    input_type = request.form.get("input_type", "images")  # "images" or "video"
 
     # Create task
     task_id = str(uuid.uuid4())
     task = Task(
         id=task_id,
         status="uploading",
-        num_images=len(valid_files),
+        num_images=0,
     )
     db.session.add(task)
     db.session.commit()
 
-    # Save uploaded images
     image_dir = os.path.join(UPLOAD_FOLDER, task_id)
     os.makedirs(image_dir, exist_ok=True)
 
-    for f in valid_files:
-        filename = f.filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]  # sanitize
-        f.save(os.path.join(image_dir, filename))
+    # ── Video input path ────────────────────────────────────────
+    if input_type == "video":
+        video_file = request.files.get("video")
+        if not video_file or not video_file.filename:
+            return jsonify({"error": "No video file provided"}), 400
+        if not _allowed_video(video_file.filename):
+            return jsonify({
+                "error": f"Unsupported video format. "
+                         f"Allowed: {', '.join(sorted(VIDEO_ALLOWED_EXTENSIONS))}"
+            }), 400
 
-    task.status = "pending"
-    db.session.commit()
+        video_filename = video_file.filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+        video_path = os.path.join(image_dir, video_filename)
+        video_file.save(video_path)
 
-    # Start reconstruction in background thread
-    from tasks import run_reconstruction_async
-    run_reconstruction_async(task_id, image_dir, quality, mode)
-    logger.info(f"Task {task_id} started in background thread")
+        target_frames = int(request.form.get("target_frames", 30))
+
+        task.stage = "video_processing"
+        db.session.commit()
+
+        from tasks import run_reconstruction_async
+        run_reconstruction_async(
+            task_id, image_dir, quality, mode,
+            video_path=video_path,
+            target_frames=target_frames,
+        )
+        logger.info(f"Task {task_id} started with video: {video_filename}")
+
+    # ── Image input path ────────────────────────────────────────
+    else:
+        if "images" not in request.files:
+            return jsonify({"error": "No images provided"}), 400
+
+        files = request.files.getlist("images")
+        valid_files = [f for f in files if f.filename and _allowed_image(f.filename)]
+        if not valid_files:
+            return jsonify({"error": "No valid image files (png, jpg, jpeg, tiff, bmp)"}), 400
+
+        task.num_images = len(valid_files)
+        db.session.commit()
+
+        for f in valid_files:
+            filename = f.filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+            f.save(os.path.join(image_dir, filename))
+
+        task.status = "pending"
+
+        # Track uploaded extensions for better UX messages
+        uploaded_exts = set()
+        for f in files:
+            if f.filename:
+                ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
+                uploaded_exts.add(ext)
+        if uploaded_exts - ALLOWED_EXTENSIONS:
+            logger.info(
+                "Task %s: some files rejected — allowed %s, got %s",
+                task_id, ALLOWED_EXTENSIONS, uploaded_exts,
+            )
+
+        db.session.commit()
+
+        from tasks import run_reconstruction_async
+        run_reconstruction_async(task_id, image_dir, quality, mode)
+        logger.info(f"Task {task_id} started with {len(valid_files)} images")
 
     return jsonify({"task": task.to_dict()}), 202
 
@@ -170,6 +220,25 @@ def download_result(task_id, filetype):
     directory = os.path.dirname(filepath)
     basename = os.path.basename(filepath)
     return send_from_directory(directory, basename, as_attachment=True)
+
+
+# ── Depth map previews ───────────────────────────────────────
+@app.route("/api/tasks/<task_id>/depth_previews/<filename>")
+def serve_depth_preview(task_id, filename):
+    """Serve a single depth map preview image."""
+    task = db.session.get(Task, task_id)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+
+    preview_dir = os.path.join(RESULT_FOLDER, task_id, "depth_previews")
+    if not os.path.isdir(preview_dir):
+        return jsonify({"error": "No depth previews available"}), 404
+
+    filepath = os.path.join(preview_dir, filename)
+    if not os.path.isfile(filepath):
+        return jsonify({"error": "Preview file not found"}), 404
+
+    return send_from_directory(preview_dir, filename)
 
 
 # ── Delete task ──────────────────────────────────────────────

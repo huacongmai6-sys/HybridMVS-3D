@@ -39,3 +39,11 @@ MVS_CHECKPOINT = os.environ.get(
     "MVS_CHECKPOINT",
     os.path.join(PROJECT_DIR, "checkpoints", "model_000007.ckpt"),
 )
+
+# Video processing
+VIDEO_ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv", "webm"}
+VIDEO_MAX_DURATION_SEC = 120
+VIDEO_TARGET_FRAMES = 30
+VIDEO_BLUR_THRESHOLD = 100.0
+VIDEO_SIMILARITY_THRESHOLD = 0.92
+VIDEO_MIN_INTERVAL_SEC = 0.3
