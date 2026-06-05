@@ -1,34 +1,28 @@
 import { useEffect, useRef } from "react";
 
 /**
- * DotWaveBackground — 浅色主题点阵波动背景 + 丝滑鼠标涟漪交互
+ * DotWaveBackground — 随机飘浮点阵背景 + 鼠标扰动
  *
- * 鼠标周围形成连续排斥场，点阵如丝绸般被推开。
- * 鼠标移动时额外抛射扩散涟漪环，如水投石子。
+ * 每个点独立随机漂移，向随机目标缓慢移动，叠加微幅正弦扰动。
+ * 鼠标周围形成排斥场，推开附近的点并使其变亮变大。
+ * 参考粒子浮游风格，不使用外部动画库。
  */
 
-const DOT_SPACING = 20;
-const WAVES = [
-  { amp: 12, freq: 0.0022, speed: 0.22, angle: 0.35 },
-  { amp: 8,  freq: 0.0038, speed: 0.38, angle: -0.55 },
-  { amp: 10, freq: 0.0028, speed: 0.28, angle: 1.05 },
-  { amp: 6,  freq: 0.0052, speed: 0.48, angle: -0.18 },
-  { amp: 5,  freq: 0.0065, speed: 0.58, angle: 0.72 },
+const NUM_DOTS = 600;
+const MOUSE_RADIUS = 100;          // 鼠标影响半径 px
+const MOUSE_STRENGTH = 35;         // 最大推力
+const MOUSE_SMOOTH = 0.08;         // 鼠标平滑跟随系数 (每帧 lerp)
+const MAX_SPEED = 0.8;             // 最大漂移速度 px/帧 @60fps
+const WANDER_FORCE = 0.03;         // 随机游走力度
+
+// 5 色调色板（参考原版粒子动画）
+const PALETTE = [
+  [178, 148, 157],  // #B2949D 紫灰 mauve
+  [255, 245, 120],  // #FFF578 暖黄
+  [255, 95, 141],   // #FF5F8D 粉红
+  [55, 169, 204],   // #37A9CC 浅青
+  [24, 142, 178],   // #188EB2 深青
 ];
-
-// ── 连续排斥场参数 ──────────────────────────────────
-const FIELD_SIGMA = 100;        // 排斥场高斯 σ (影响半径)
-const FIELD_STRENGTH = 16;      // 最大推力 px
-const FIELD_SMOOTH = 0.12;      // 鼠标平滑跟随系数 (每帧 lerp)
-
-// ── 离散涟漪参数 ────────────────────────────────────
-const RIPPLE_INIT_AMP = 18;
-const RIPPLE_SPEED = 90;
-const RIPPLE_SIGMA = 30;
-const RIPPLE_DECAY = 0.968;
-const RIPPLE_THROTTLE_MS = 50;
-const RIPPLE_MIN_DIST = 16;
-const RIPPLE_MIN_AMP = 0.3;
 
 export default function DotWaveBackground() {
   const canvasRef = useRef(null);
@@ -41,17 +35,37 @@ export default function DotWaveBackground() {
     let W = 0;
     let H = 0;
 
-    // ── 鼠标 & 涟漪状态 ──────────────────────────────
+    // ── 鼠标状态 ──────────────────────────────────────
     let mouseX = -1000;
     let mouseY = -1000;
     let smoothMouseX = -1000;
     let smoothMouseY = -1000;
     let mouseActive = false;
-    let lastRippleTime = 0;
-    let lastRippleX = -1000;
-    let lastRippleY = -1000;
-    const ripples = []; // { cx, cy, radius, amplitude }
 
+    // ── 点数组 ──────────────────────────────────────
+    let dots = [];
+
+    const rand = (min, max) => min + Math.random() * (max - min);
+
+    /** 初始化所有点：随机位置 + 随机速度 + 个体参数 */
+    const initDots = () => {
+      dots = [];
+      for (let i = 0; i < NUM_DOTS; i++) {
+        const angle = rand(0, Math.PI * 2);
+        const spd = rand(0.1, MAX_SPEED);
+        dots.push({
+          x: rand(0, W),
+          y: rand(0, H),
+          vx: Math.cos(angle) * spd,     // 随机初始速度方向
+          vy: Math.sin(angle) * spd,
+          radius: rand(6, 12),
+          baseAlpha: rand(0.2, 0.55),
+          colorIndex: Math.floor(Math.random() * PALETTE.length),
+        });
+      }
+    };
+
+    // ── Resize ───────────────────────────────────────
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       W = window.innerWidth;
@@ -61,6 +75,7 @@ export default function DotWaveBackground() {
       canvas.style.width = `${W}px`;
       canvas.style.height = `${H}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initDots();
     };
 
     resize();
@@ -70,30 +85,11 @@ export default function DotWaveBackground() {
     const onMouseMove = (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-
-      // 鼠标进入时，smoothed 直接跳到当前位置（避免从远处滑入）
       if (!mouseActive) {
         smoothMouseX = mouseX;
         smoothMouseY = mouseY;
       }
       mouseActive = true;
-
-      const now = performance.now();
-      const dx = mouseX - lastRippleX;
-      const dy = mouseY - lastRippleY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (now - lastRippleTime >= RIPPLE_THROTTLE_MS && dist >= RIPPLE_MIN_DIST) {
-        ripples.push({
-          cx: mouseX,
-          cy: mouseY,
-          radius: 0,
-          amplitude: RIPPLE_INIT_AMP,
-        });
-        lastRippleTime = now;
-        lastRippleX = mouseX;
-        lastRippleY = mouseY;
-      }
     };
 
     const onMouseLeave = () => {
@@ -103,14 +99,14 @@ export default function DotWaveBackground() {
     window.addEventListener("mousemove", onMouseMove, { passive: true });
     window.addEventListener("mouseleave", onMouseLeave);
 
-    const maxWaveDisp = WAVES.reduce((s, w) => s + w.amp, 0);
-    const rippleSigma2 = 2 * RIPPLE_SIGMA * RIPPLE_SIGMA;
-    const fieldSigma2 = 2 * FIELD_SIGMA * FIELD_SIGMA;
+    const mouseRadius2 = MOUSE_RADIUS * MOUSE_RADIUS;
+    const FPS_NORM = 60; // 归一化到 60fps 的速度基准
 
+    // ── 主绘制循环 ──────────────────────────────────
     const draw = (time) => {
       ctx.clearRect(0, 0, W, H);
 
-      // ── 蓝色渐变 ──────────────────────────────────
+      // ── 蓝色渐变背景 ────────────────────────────────
       const grad = ctx.createRadialGradient(
         W * 0.25, H * 0.15, 0,
         W * 0.55, H * 0.55, W * 1.3,
@@ -126,22 +122,12 @@ export default function DotWaveBackground() {
       const dt = Math.min((time - (draw._prevTime || time)) * 0.001, 0.1);
       draw._prevTime = time;
 
-      // ── 平滑鼠标位置 ─────────────────────────────────
-      smoothMouseX += (mouseX - smoothMouseX) * FIELD_SMOOTH;
-      smoothMouseY += (mouseY - smoothMouseY) * FIELD_SMOOTH;
+      // ── 平滑鼠标 ────────────────────────────────────
+      smoothMouseX += (mouseX - smoothMouseX) * MOUSE_SMOOTH;
+      smoothMouseY += (mouseY - smoothMouseY) * MOUSE_SMOOTH;
 
-      // ── 更新涟漪 ─────────────────────────────────────
-      for (let i = ripples.length - 1; i >= 0; i--) {
-        const rp = ripples[i];
-        rp.radius += RIPPLE_SPEED * dt;
-        rp.amplitude *= RIPPLE_DECAY;
-        if (rp.amplitude < RIPPLE_MIN_AMP) {
-          ripples.splice(i, 1);
-        }
-      }
-
-      // ── 横向扫描线 (极淡) ──────────────────────────────
-      ctx.strokeStyle = "rgba(90, 120, 190, 0.05)";
+      // ── 横向扫描线 ──────────────────────────────────
+      ctx.strokeStyle = "rgba(90, 120, 190, 0.04)";
       ctx.lineWidth = 1;
       const scanOffset = (t * 35) % 110;
       for (let sy = -110 + scanOffset; sy < H + 110; sy += 110) {
@@ -151,89 +137,85 @@ export default function DotWaveBackground() {
         ctx.stroke();
       }
 
-      // ── 点阵绘制 ──────────────────────────────────────
-      for (let x = DOT_SPACING / 2; x < W + DOT_SPACING; x += DOT_SPACING) {
-        for (let y = DOT_SPACING / 2; y < H + DOT_SPACING; y += DOT_SPACING) {
-          // 正弦波位移
-          let dx = 0, dy = 0;
-          for (const w of WAVES) {
-            const phase = t * w.speed;
-            const proj = Math.cos(w.angle) * x + Math.sin(w.angle) * y;
-            const val = Math.sin(proj * w.freq + phase);
-            dx += Math.cos(w.angle) * val * w.amp;
-            dy += Math.sin(w.angle) * val * w.amp;
-          }
+      // ── 更新点位置（纯随机游走）────────────────────
+      const dtNorm = dt * FPS_NORM;
 
-          let rippleBoost = 0;
-          let mouseBoost = 0;
+      for (const dot of dots) {
+        // ① 随机扰动加速度（布朗运动）
+        const ax = rand(-WANDER_FORCE, WANDER_FORCE) * dtNorm;
+        const ay = rand(-WANDER_FORCE, WANDER_FORCE) * dtNorm;
+        dot.vx += ax;
+        dot.vy += ay;
 
-          // ── ① 连续排斥场：鼠标周围丝滑推开 ──────────
-          if (mouseActive) {
-            const mdx = x - smoothMouseX;
-            const mdy = y - smoothMouseY;
-            const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-            if (mdist > 0.5) {
-              const fieldFactor = Math.exp(-(mdist * mdist) / fieldSigma2);
-              const push = FIELD_STRENGTH * fieldFactor;
-              const nx = mdx / mdist;
-              const ny = mdy / mdist;
-              dx += nx * push;
-              dy += ny * push;
-              mouseBoost = fieldFactor;
-            }
-          }
-
-          // ── ② 离散涟漪：移动时抛射波纹环 ─────────────
-          let rippleDx = 0, rippleDy = 0;
-          for (const rp of ripples) {
-            const rdx = x - rp.cx;
-            const rdy = y - rp.cy;
-            const dist = Math.sqrt(rdx * rdx + rdy * rdy);
-            if (dist < 0.5) continue;
-
-            const ringArg = (dist - rp.radius);
-            const ringFactor = Math.exp(-(ringArg * ringArg) / rippleSigma2);
-            if (ringFactor < 0.001) continue;
-
-            const nx = rdx / dist;
-            const ny = rdy / dist;
-            const push = rp.amplitude * ringFactor;
-            rippleDx += nx * push;
-            rippleDy += ny * push;
-            if (ringFactor > rippleBoost) rippleBoost = ringFactor;
-          }
-
-          dx += rippleDx;
-          dy += rippleDy;
-
-          const px = x + dx;
-          const py = y + dy;
-          const disp = Math.sqrt(dx * dx + dy * dy);
-          const intensity = Math.min(disp / maxWaveDisp, 1.0);
-
-          // 综合亮度提升 (排斥场 + 涟漪)
-          const boost = Math.min(mouseBoost * 0.5 + rippleBoost * 0.6, 0.7);
-          const effectiveIntensity = Math.min(intensity + boost, 1.0);
-
-          // ── 蓝色渐变圆点：中心深蓝 → 边缘浅蓝 ──────────
-          const radius = 1.5 + effectiveIntensity * 2.8;
-          const alpha = 0.18 + effectiveIntensity * 0.6;
-
-          // 颜色随强度从饱满蓝渐变到鲜明蓝
-          const cr = Math.round(30 + effectiveIntensity * 35);    // 30→65
-          const cg = Math.round(65 + effectiveIntensity * 55);    // 65→120
-          const cb = Math.round(185 + effectiveIntensity * 70);   // 185→255
-
-          const gradDot = ctx.createRadialGradient(px, py, 0, px, py, radius);
-          gradDot.addColorStop(0, `rgba(${cr},${cg},${cb},${alpha})`);
-          gradDot.addColorStop(0.35, `rgba(${cr+25},${cg+25},${Math.min(cb+15,255)},${alpha*0.55})`);
-          gradDot.addColorStop(1, `rgba(${cr+70},${cg+45},${Math.min(cb+5,255)},0)`);
-
-          ctx.beginPath();
-          ctx.arc(px, py, radius, 0, Math.PI * 2);
-          ctx.fillStyle = gradDot;
-          ctx.fill();
+        // ② 限速
+        const spd = Math.sqrt(dot.vx * dot.vx + dot.vy * dot.vy);
+        if (spd > MAX_SPEED) {
+          dot.vx = (dot.vx / spd) * MAX_SPEED;
+          dot.vy = (dot.vy / spd) * MAX_SPEED;
         }
+
+        // ③ 更新位置
+        dot.x += dot.vx * dtNorm;
+        dot.y += dot.vy * dtNorm;
+
+        // ④ 边界软反弹
+        if (dot.x < 0) { dot.x = 0; dot.vx *= -1; }
+        if (dot.x > W) { dot.x = W; dot.vx *= -1; }
+        if (dot.y < 0) { dot.y = 0; dot.vy *= -1; }
+        if (dot.y > H) { dot.y = H; dot.vy *= -1; }
+      }
+
+      // ── 鼠标排斥场（第二遍遍历，确保所有点位置已更新）──
+      if (mouseActive) {
+        for (const dot of dots) {
+          const mdx = dot.x - smoothMouseX;
+          const mdy = dot.y - smoothMouseY;
+          const mdist2 = mdx * mdx + mdy * mdy;
+
+          if (mdist2 < mouseRadius2 && mdist2 > 0.01) {
+            const mdist = Math.sqrt(mdist2);
+            // 二次衰减：距离越近推力越大
+            const factor = 1 - mdist / MOUSE_RADIUS;
+            const push = MOUSE_STRENGTH * factor * factor * dtNorm;
+
+            dot.x += (mdx / mdist) * push;
+            dot.y += (mdy / mdist) * push;
+          }
+        }
+      }
+
+      // ── 绘制所有点 ──────────────────────────────────
+      for (const dot of dots) {
+        let alpha = dot.baseAlpha;
+        let radius = dot.radius;
+        let brightness = 0;
+
+        // 鼠标附近的点更亮更大
+        if (mouseActive) {
+          const mdx = dot.x - smoothMouseX;
+          const mdy = dot.y - smoothMouseY;
+          const mdist2 = mdx * mdx + mdy * mdy;
+
+          if (mdist2 < mouseRadius2) {
+            const mdist = Math.sqrt(mdist2);
+            const factor = 1 - mdist / MOUSE_RADIUS;
+            brightness = factor;
+            alpha = Math.min(dot.baseAlpha + factor * 0.5, 0.82);
+            radius = dot.radius * (1 + factor * 0.7);
+          }
+        }
+
+        // 颜色：从 5 色调色板取色，带透明度
+        const [pr, pg, pb] = PALETTE[dot.colorIndex];
+        // 鼠标附近略微提亮
+        const cr = Math.round(Math.min(pr + brightness * 30, 255));
+        const cg = Math.round(Math.min(pg + brightness * 30, 255));
+        const cb = Math.round(Math.min(pb + brightness * 30, 255));
+
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${alpha})`;
+        ctx.fill();
       }
 
       // ── 纵向能量线 ──────────────────────────────────
