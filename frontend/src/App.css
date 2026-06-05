@@ -7,10 +7,16 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--bg-deep);
-  /* Subtle noise texture overlay */
-  background-image:
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  gap: 10px;
+  padding: 10px;
+  /* 透明背景，让点阵波动在卡片间隙可见 */
+  background: transparent;
+}
+.app > * {
+  pointer-events: auto;
 }
 
 .app-header {
@@ -20,22 +26,37 @@
   padding: 0 24px;
   height: 52px;
   min-height: 52px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%);
+  backdrop-filter: blur(9px) saturate(1.4);
+  -webkit-backdrop-filter: blur(9px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
   position: relative;
   z-index: 20;
-}
-.app-header::after {
-  content: "";
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
-  opacity: 0.6;
+  box-shadow:
+    0 8px 40px rgba(20, 20, 30, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  overflow: hidden;
 }
 
+/* ── 光泽扫过动画 ──────────────────────────────── */
+.app-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: glass-shine 3s infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes glass-shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
 .app-header h1 {
   font-family: var(--font-mono);
   font-size: 16px;
@@ -59,7 +80,9 @@
 .app-main {
   display: flex;
   flex: 1;
+  gap: 10px;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* ── Sidebar ────────────────────────────────────────── */
@@ -68,11 +91,37 @@
   min-width: 400px;
   overflow-y: auto;
   padding: 20px;
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%);
+  backdrop-filter: blur(9px) saturate(1.4);
+  -webkit-backdrop-filter: blur(9px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 8px 40px rgba(20, 20, 30, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  clip-path: inset(0);
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* ── 光泽扫过 ──────────────────────────────────── */
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: glass-shine 3s infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.sidebar > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Section card base ──────────────────────────────── */
@@ -82,7 +131,7 @@
   padding: 18px;
   border-radius: var(--radius-md);
   background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   transition: border-color 0.25s ease;
 }
 
@@ -110,8 +159,9 @@
   display: flex;
   gap: 4px;
   padding: 4px;
-  background: var(--bg-deep);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   margin-bottom: 14px;
 }
 
@@ -133,25 +183,26 @@
 .tab-btn.active {
   color: var(--text-bright);
   background: var(--bg-raised);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 /* ── Drop Zone ──────────────────────────────────────── */
 .drop-zone {
-  border: 2px dashed var(--border-default);
+  border: 2px dashed rgba(120, 160, 210, 0.1);
   border-radius: var(--radius-md);
   padding: 42px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.25s ease;
   margin-bottom: 14px;
-  background: var(--bg-deep);
+  background: rgba(0, 0, 0, 0.02);
 }
 .drop-zone:hover,
 .drop-zone.drag-over {
   border-color: var(--accent);
   background: var(--accent-soft);
-  box-shadow: 0 0 24px var(--accent-glow);
+  box-shadow: 0 0 28px var(--accent-glow);
+  transform: translateY(-1px);
 }
 .drop-icon {
   font-size: 40px;
@@ -479,17 +530,32 @@
 .viewer-section {
   flex: 1;
   position: relative;
-  background: var(--bg-deep);
-  /* Radial grid overlay — subtle */
-  background-image:
-    radial-gradient(circle at 50% 50%, rgba(77,140,240,0.02) 0%, transparent 70%),
-    linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
-  background-size: 100% 100%, 60px 60px, 60px 60px;
-  background-position: center;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%);
+  backdrop-filter: blur(9px) saturate(1.4);
+  -webkit-backdrop-filter: blur(9px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 8px 40px rgba(20, 20, 30, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  clip-path: inset(0);
 }
 
-.viewer-3d { width: 100%; height: 100%; }
+/* ── 光泽扫过 ──────────────────────────────────── */
+.viewer-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  animation: glass-shine 4s infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.viewer-3d { width: 100%; height: 100%; position: relative; z-index: 2; }
 
 /* ── Viewer Placeholder ─────────────────────────────── */
 .viewer-placeholder {
@@ -501,6 +567,16 @@
   gap: 16px;
   color: var(--text-muted);
   text-align: center;
+  position: relative;
+  z-index: 2;
+}
+/* Frosted panel behind placeholder text for legibility over dot wave */
+.viewer-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.6), transparent 70%);
 }
 .viewer-placeholder .placeholder-icon {
   width: 80px;
@@ -549,7 +625,7 @@
 .viewer-hud-badge {
   padding: 6px 16px;
   border-radius: 20px;
-  background: rgba(9, 13, 20, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--border-subtle);
   backdrop-filter: blur(8px);
   color: var(--text-body);
@@ -579,7 +655,7 @@
   gap: 16px;
   padding: 6px 18px;
   border-radius: 20px;
-  background: rgba(9, 13, 20, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--border-subtle);
   backdrop-filter: blur(8px);
 }
@@ -672,7 +748,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(4, 6, 12, 0.92);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
@@ -691,7 +767,7 @@
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   background: var(--bg-deep);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
 }
 .depth-lightbox-content img {
   display: block;
@@ -727,7 +803,7 @@
   height: 36px;
   border-radius: 50%;
   border: 1px solid var(--border-subtle);
-  background: rgba(9, 13, 20, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--text-body);
   font-size: 16px;
   cursor: pointer;
@@ -749,7 +825,7 @@
   width: 42px;
   height: 64px;
   border: 1px solid var(--border-subtle);
-  background: rgba(9, 13, 20, 0.75);
+  background: rgba(255, 255, 255, 0.85);
   color: var(--text-body);
   font-size: 28px;
   cursor: pointer;
@@ -760,7 +836,7 @@
   backdrop-filter: blur(8px);
 }
 .lightbox-nav:hover {
-  background: rgba(9, 13, 20, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   color: var(--accent);
   border-color: var(--border-accent);
 }
@@ -775,13 +851,12 @@
 
 /* ── Responsive ─────────────────────────────────────── */
 @media (max-width: 768px) {
-  .app-main { flex-direction: column; }
+  .app { padding: 6px; gap: 6px; }
+  .app-main { flex-direction: column; gap: 6px; }
   .sidebar {
     width: 100%;
     min-width: 0;
     max-height: 42vh;
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
     padding: 12px;
     gap: 10px;
   }

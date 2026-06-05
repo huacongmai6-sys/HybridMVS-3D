@@ -157,7 +157,7 @@ export default function Viewer3D({ modelUrl }) {
     );
   }
 
-  const canvasBg = "#0b1019";
+  const canvasBg = "#ffffff";
 
   return (
     <div className="viewer-3d" style={{ position: "relative" }}>

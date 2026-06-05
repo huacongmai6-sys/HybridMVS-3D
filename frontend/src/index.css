@@ -1,29 +1,29 @@
-/* === Design System: Precision Instrument === */
+/* === Design System: Light === */
 :root {
   /* Core palette */
-  --bg-deep:    #090d14;
-  --bg-surface: #111620;
-  --bg-raised:  #161c26;
-  --bg-hover:   #1c2333;
+  --bg-deep:    #d8e0f0;
+  --bg-surface: #ffffff;
+  --bg-raised:  #f7f8fa;
+  --bg-hover:   #edf0f4;
 
-  --border-subtle: #1e2738;
-  --border-default:#263040;
-  --border-accent: #2d4570;
+  --border-subtle: rgba(0,0,0,0.05);
+  --border-default: rgba(0,0,0,0.07);
+  --border-accent: rgba(100,140,200,0.15);
 
-  --text-muted:   #5a667a;
-  --text-body:    #96a3b8;
-  --text-heading: #d0d7e5;
-  --text-bright:  #eef2f9;
+  --text-muted:   #6b7280;
+  --text-body:    #374151;
+  --text-heading: #1f2937;
+  --text-bright:  #111827;
 
   /* Accent — steel blue */
-  --accent:       #4d8cf0;
-  --accent-glow:  rgba(77, 140, 240, 0.18);
-  --accent-soft:  rgba(77, 140, 240, 0.08);
+  --accent:       #3b82f6;
+  --accent-glow:  rgba(59, 130, 246, 0.12);
+  --accent-soft:  rgba(59, 130, 246, 0.06);
 
   /* Status */
-  --green:  #3cc97e;
-  --red:    #f04555;
-  --amber:  #f0a64d;
+  --green:  #16a34a;
+  --red:    #ef4444;
+  --amber:  #f59e0b;
 
   /* Typography */
   --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
@@ -50,7 +50,8 @@
   padding: 0;
 }
 
-body { margin: 0; background: var(--bg-deep); }
+html { background: #c2cde4; }
+body { margin: 0; background: #c2cde4; }
 #root { height: 100vh; overflow: hidden; }
 
 /* === Scrollbar === */
@@ -60,4 +61,4 @@ body { margin: 0; background: var(--bg-deep); }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-accent); }
 
 /* === Selection === */
-::selection { background: var(--accent-glow); color: var(--text-bright); }
+::selection { background: var(--accent-soft); color: var(--text-heading); }

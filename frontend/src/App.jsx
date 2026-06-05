@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import UploadPanel from "./components/UploadPanel";
 import ProgressPanel from "./components/ProgressPanel";
 import DepthMapPanel from "./components/DepthMapPanel";
+import DotWaveBackground from "./components/DotWaveBackground";
 import Viewer3D from "./components/Viewer3D";
 import { getDownloadUrl } from "./api";
 import "./App.css";
@@ -20,7 +21,9 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <>
+      <DotWaveBackground />
+      <div className="app">
       <header className="app-header">
         <h1><span>Hybrid</span>MVS</h1>
         <span className="subtitle">基于COLMAP与深度学习的混合式三维重建系统</span>
@@ -88,5 +91,6 @@ export default function App() {
         </section>
       </main>
     </div>
+    </>
   );
 }
