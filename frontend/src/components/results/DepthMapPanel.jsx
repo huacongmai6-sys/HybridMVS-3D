@@ -1,9 +1,18 @@
-import { useState } from "react";
-import { getDepthPreviewUrl } from "../api";
+import { useState, useEffect } from "react";
+import { getDepthPreviewUrl } from "../../api";
+import "../../styles/results.css";
 
-/** Depth map preview gallery — shows 3-5 pseudo-colored depth maps. */
+/**
+ * DepthMapPanel — Depth map preview gallery + lightbox (dark theme).
+ * Migrated from original DepthMapPanel.jsx, updated for dark theme.
+ */
 export default function DepthMapPanel({ depthPreviews, taskId }) {
   const [expandedIndex, setExpandedIndex] = useState(null);
+
+  /* Reset when task changes */
+  useEffect(() => {
+    setExpandedIndex(null);
+  }, [taskId]);
 
   if (!depthPreviews || depthPreviews.length === 0) return null;
 
@@ -13,15 +22,17 @@ export default function DepthMapPanel({ depthPreviews, taskId }) {
       setExpandedIndex((expandedIndex + 1) % depthPreviews.length);
     }
     if (e.key === "ArrowLeft" && expandedIndex !== null) {
-      setExpandedIndex((expandedIndex - 1 + depthPreviews.length) % depthPreviews.length);
+      setExpandedIndex(
+        (expandedIndex - 1 + depthPreviews.length) % depthPreviews.length
+      );
     }
   };
 
   return (
-    <div className="depth-panel" onKeyDown={handleKeyDown} tabIndex={-1}>
-      <h3>深度图预览</h3>
-      <p className="depth-panel-desc">
-        深度估计中间结果（伪彩色，{depthPreviews.length}/{depthPreviews.length} 张采样）
+    <div className="depth-panel glass-card" onKeyDown={handleKeyDown} tabIndex={-1}>
+      <h3 className="depth-panel-title text-mono">深度图预览</h3>
+      <p className="depth-panel-desc text-muted">
+        伪彩色深度估计中间结果，{depthPreviews.length} 张采样
       </p>
 
       <div className="depth-grid">
@@ -30,7 +41,6 @@ export default function DepthMapPanel({ depthPreviews, taskId }) {
             key={preview.filename}
             className="depth-thumb"
             onClick={() => setExpandedIndex(i)}
-            title={`${preview.name} — 深度范围 [${preview.min_depth}, ${preview.max_depth}]`}
           >
             <img
               src={getDepthPreviewUrl(taskId, preview.filename)}
@@ -38,14 +48,14 @@ export default function DepthMapPanel({ depthPreviews, taskId }) {
               loading="lazy"
             />
             <span className="depth-label">{preview.name}</span>
-            <span className="depth-range">
-              {preview.min_depth}m – {preview.max_depth}m
+            <span className="depth-range text-mono">
+              {preview.min_depth?.toFixed(2)} – {preview.max_depth?.toFixed(2)}m
             </span>
           </button>
         ))}
       </div>
 
-      {/* Lightbox overlay */}
+      {/* Lightbox */}
       {expandedIndex !== null && depthPreviews[expandedIndex] && (
         <div className="depth-lightbox" onClick={() => setExpandedIndex(null)}>
           <div className="depth-lightbox-content" onClick={(e) => e.stopPropagation()}>
@@ -55,18 +65,15 @@ export default function DepthMapPanel({ depthPreviews, taskId }) {
             />
             <div className="depth-lightbox-info">
               <span>{depthPreviews[expandedIndex].name}</span>
-              <span className="depth-range">
-                深度范围: {depthPreviews[expandedIndex].min_depth}m –{" "}
-                {depthPreviews[expandedIndex].max_depth}m
+              <span className="depth-range text-mono">
+                深度范围: {depthPreviews[expandedIndex].min_depth?.toFixed(2)}m –{" "}
+                {depthPreviews[expandedIndex].max_depth?.toFixed(2)}m
               </span>
-              <span className="lightbox-index">
+              <span className="lightbox-index text-mono">
                 {expandedIndex + 1} / {depthPreviews.length}
               </span>
             </div>
-            <button
-              className="lightbox-close"
-              onClick={() => setExpandedIndex(null)}
-            >
+            <button className="lightbox-close" onClick={() => setExpandedIndex(null)}>
               ✕
             </button>
             {depthPreviews.length > 1 && (

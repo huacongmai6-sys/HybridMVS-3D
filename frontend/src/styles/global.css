@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════════════════════
+   Global Reset & Base Styles — Dark Tech UI
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Reset ───────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── HTML / Body ────────────────────────────── */
+html, body {
+  background: var(--bg-deep);
+  color: var(--text-body);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100%;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Scrollbar ──────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-accent);
+}
+
+/* ── Selection ──────────────────────────────── */
+::selection {
+  background: var(--primary-soft);
+  color: var(--text-bright);
+}
+
+/* ── Links ──────────────────────────────────── */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+a:hover {
+  color: var(--highlight);
+}
+
+/* ── Images ─────────────────────────────────── */
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ── Focus visible ──────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Reduced motion ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════
+   HybridMVS Design Tokens — Dark Tech UI
+   色彩 · 字体 · 间距 · 阴影 · 毛玻璃
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 主背景层次 ────────────────────────────── */
+  --bg-deep:        #0B1020;
+  --bg-surface:     #111827;
+  --bg-raised:      #1A2332;
+  --bg-hover:       #243044;
+
+  /* ── 边框 ──────────────────────────────────── */
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-accent:  rgba(79, 140, 255, 0.25);
+
+  /* ── 文字层级 ──────────────────────────────── */
+  --text-muted:     #7C8AA0;
+  --text-body:      #B0BEC5;
+  --text-heading:   #E2E8F0;
+  --text-bright:    #F1F5F9;
+
+  /* ── 品牌色 ────────────────────────────────── */
+  --primary:        #4F8CFF;
+  --primary-glow:   rgba(79, 140, 255, 0.4);
+  --primary-soft:   rgba(79, 140, 255, 0.08);
+  --highlight:      #00E5FF;
+
+  /* ── 状态色 ────────────────────────────────── */
+  --success:        #22C55E;
+  --warning:        #F59E0B;
+  --error:          #EF4444;
+
+  /* ── 毛玻璃 ────────────────────────────────── */
+  --glass-bg:       rgba(255, 255, 255, 0.06);
+  --glass-blur:     20px;
+  --glass-border:   rgba(255, 255, 255, 0.08);
+
+  /* ── 阴影层级 ──────────────────────────────── */
+  --shadow-glow:    0 0 20px rgba(79, 140, 255, 0.4);
+  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.4);
+
+  /* ── 排版 ──────────────────────────────────── */
+  --font-body: "Inter", -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  /* ── 圆角 ──────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  /* ── 过渡 ──────────────────────────────────── */
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+}

@@ -1,0 +1,107 @@
+/* ═══════════════════════════════════════════════════════════
+   Responsive Breakpoints — HybridMVS
+   Desktop ≥1440  |  Laptop ≥1200  |  Tablet <1200  |  Mobile <768
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Desktop (≥1440px): full-width layout ────── */
+@media (min-width: 1440px) {
+  .sidebar-col {
+    width: 360px;
+    min-width: 360px;
+    max-width: 360px;
+  }
+  .sidebar-collapsed .sidebar-col {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+  }
+}
+
+/* ── Laptop (1200-1439px): slightly compact ─── */
+@media (max-width: 1439px) and (min-width: 1200px) {
+  .sidebar-col {
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+  }
+  .sidebar-collapsed .sidebar-col {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+  }
+  .heading-xl {
+    font-size: 2rem;
+  }
+}
+
+/* ── Tablet (<1200px): stack vertically ─────── */
+@media (max-width: 1199px) {
+  .main-layout {
+    flex-direction: column;
+  }
+  .sidebar-col {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .sidebar-collapsed .sidebar-col {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    max-height: 48px;
+    padding: 8px;
+  }
+  .viewer-col {
+    flex: 1;
+    min-height: 60vh;
+  }
+  .mode-cards {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .mode-card {
+    flex: 1 1 140px;
+    min-width: 130px;
+  }
+  .hero-title {
+    font-size: 2rem;
+  }
+}
+
+/* ── Mobile (<768px): compact ───────────────── */
+@media (max-width: 767px) {
+  .hero-title {
+    font-size: 1.6rem;
+  }
+  .hero-subtitle {
+    font-size: 0.95rem;
+  }
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .mode-cards {
+    flex-direction: column;
+  }
+  .mode-card {
+    flex: none;
+  }
+  .metrics-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .file-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  }
+  .sidebar-col {
+    max-height: 40vh;
+  }
+  .viewer-col {
+    min-height: 60vh;
+  }
+  .heading-xl {
+    font-size: 1.5rem;
+  }
+}

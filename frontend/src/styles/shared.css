@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════════════════
+   Shared Utility Classes — Glass Cards, Buttons, Typography
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Glass Card ─────────────────────────────── */
+.glass-card {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* Glass shine sweep */
+.glass-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.04),
+    transparent
+  );
+  animation: glassShine 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Glass Card (hover lift) ────────────────── */
+.glass-card-interactive {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+.glass-card-interactive::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.04),
+    transparent
+  );
+  animation: glassShine 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.glass-card-interactive > * {
+  position: relative;
+  z-index: 1;
+}
+.glass-card-interactive:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-glow), var(--shadow-card);
+}
+.glass-card-interactive:active {
+  transform: scale(0.98);
+}
+
+/* ── Buttons ────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Primary — solid brand color */
+.btn-primary {
+  composes: btn;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 16px var(--primary-glow);
+}
+.btn-primary:hover {
+  background: #5B98FF;
+  box-shadow: 0 0 28px var(--primary-glow), 0 0 56px rgba(79, 140, 255, 0.2);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: scale(0.98) translateY(0);
+}
+
+/* Ghost — transparent with border */
+.btn-ghost {
+  composes: btn;
+  background: transparent;
+  color: var(--text-heading);
+  border: 1px solid var(--border-default);
+}
+.btn-ghost:hover {
+  background: var(--glass-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+.btn-ghost:active {
+  transform: scale(0.98);
+}
+
+/* Download — success styling */
+.btn-download {
+  composes: btn;
+  background: var(--glass-bg);
+  color: var(--text-heading);
+  border: 1px solid var(--border-default);
+  font-size: 13px;
+  padding: 8px 16px;
+}
+.btn-download:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+/* Small variant */
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Typography Utilities ───────────────────── */
+.text-mono {
+  font-family: var(--font-mono);
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-heading {
+  color: var(--text-heading);
+}
+.text-primary {
+  color: var(--primary);
+}
+
+/* ── Heading styles ─────────────────────────── */
+.heading-xl {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: -0.02em;
+}
+.heading-lg {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  letter-spacing: -0.01em;
+}
+.heading-md {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+/* ── Status dots ────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.success { background: var(--success); }
+.status-dot.warning { background: var(--warning); }
+.status-dot.error   { background: var(--error); }
+.status-dot.primary { background: var(--primary); }
+
+/* ── Scrollable container ───────────────────── */
+.scroll-y {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+/* ── No-glass fallback ──────────────────────── */
+.no-glass .glass-card,
+.no-glass .glass-card-interactive {
+  background: var(--bg-raised);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.no-glass .glass-card::before {
+  display: none;
+}

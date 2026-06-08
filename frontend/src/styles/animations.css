@@ -1,0 +1,108 @@
+/* ═══════════════════════════════════════════════════════════
+   Keyframe Animations — HybridMVS Dark Tech UI
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Fade In ────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Slide ──────────────────────────────────── */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Glass shine sweep ──────────────────────── */
+@keyframes glassShine {
+  0%   { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* ── Progress bar shimmer ───────────────────── */
+@keyframes progressShine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+/* ── Pulsing glow ──────────────────────────── */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px var(--primary-glow); }
+  50%      { box-shadow: 0 0 24px var(--primary-glow), 0 0 48px rgba(79, 140, 255, 0.2); }
+}
+
+@keyframes glowPulseStrong {
+  0%, 100% { box-shadow: 0 0 16px var(--primary-glow); }
+  50%      { box-shadow: 0 0 40px var(--primary-glow), 0 0 80px rgba(79, 140, 255, 0.25); }
+}
+
+/* ── Timeline node pulse ────────────────────── */
+@keyframes timelinePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(79, 140, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(79, 140, 255, 0);
+  }
+}
+
+/* ── Float / gentle drift ───────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* ── Spin ───────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Border pulse (for placeholder states) ──── */
+@keyframes borderPulse {
+  0%, 100% { border-color: var(--border-default); }
+  50%      { border-color: var(--primary); }
+}
+
+/* ── Dot pulse ──────────────────────────────── */
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ── Scale in bounce ────────────────────────── */
+@keyframes scaleInBounce {
+  0%   { opacity: 0; transform: scale(0.3); }
+  50%  { transform: scale(1.05); }
+  70%  { transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Staggered children helper ──────────────── */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }

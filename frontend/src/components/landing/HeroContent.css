@@ -1,0 +1,3 @@
+.hero-content .fade-in-up {
+  /* Already defined in landing.css — specificity override not needed */
+}

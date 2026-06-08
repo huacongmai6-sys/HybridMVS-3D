@@ -1,0 +1,250 @@
+/* ═══════════════════════════════════════════════════════════
+   Progress — Timeline + LogWindow + ProgressBar
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Progress Timeline ──────────────────────── */
+.progress-timeline {
+  padding: 1rem;
+}
+.timeline-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.85rem;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Timeline Node ──────────────────────────── */
+.timeline-node {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  padding-bottom: 18px;
+}
+.timeline-node:last-child {
+  padding-bottom: 0;
+}
+
+/* Node icon / dot */
+.timeline-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  background: var(--bg-raised);
+  border: 2px solid var(--border-default);
+  transition: all 0.3s var(--ease-out);
+}
+
+/* Connector line */
+.timeline-connector {
+  position: absolute;
+  left: 10px;
+  top: 22px;
+  width: 2px;
+  height: calc(100% - 4px);
+  background: var(--border-default);
+  z-index: 0;
+  transition: background 0.3s var(--ease-out);
+}
+.timeline-connector.done {
+  background: var(--primary);
+}
+
+/* States */
+.timeline-node.done .timeline-dot {
+  border-color: var(--success);
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+.timeline-node.active .timeline-dot {
+  border-color: var(--primary);
+  background: rgba(79, 140, 255, 0.15);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+.timeline-node.failed .timeline-dot {
+  border-color: var(--error);
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+/* Pulse animation for active dot */
+.timeline-dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: timelinePulse 2s ease-out infinite;
+}
+.timeline-dot-empty {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-default);
+}
+
+/* Labels */
+.timeline-node-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.timeline-step-name {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: color 0.3s var(--ease-out);
+}
+.timeline-node.active .timeline-step-name {
+  color: var(--text-bright);
+  font-weight: 500;
+}
+.timeline-node.done .timeline-step-name {
+  color: var(--text-body);
+}
+.timeline-step-status {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--primary);
+}
+
+/* ── Progress Bar ───────────────────────────── */
+.progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.progress-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-raised);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--highlight));
+  position: relative;
+  transition: width 0.5s var(--ease-out);
+}
+/* Shine sweep */
+.progress-bar-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.3) 40%,
+    rgba(255,255,255,0.5) 50%,
+    rgba(255,255,255,0.3) 60%,
+    transparent 100%
+  );
+  animation: progressShine 2s ease-in-out infinite;
+}
+.progress-bar-fill.done {
+  background: var(--success);
+}
+.progress-bar-fill.failed {
+  background: var(--error);
+}
+.progress-bar-fill.failed::after {
+  display: none;
+}
+.progress-bar-pct {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 3em;
+  text-align: right;
+}
+
+/* ── Log Window ─────────────────────────────── */
+.log-window {
+  display: flex;
+  flex-direction: column;
+  max-height: 200px;
+  overflow: hidden;
+}
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.log-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.log-actions {
+  display: flex;
+  gap: 6px;
+}
+.log-action-btn {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  padding: 2px 8px;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.log-action-btn:hover {
+  border-color: var(--border-default);
+  color: var(--text-body);
+}
+.log-action-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.log-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  background: #080C16;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.6;
+  min-height: 60px;
+}
+.log-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.log-entry {
+  display: flex;
+  gap: 8px;
+}
+.log-time {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.log-msg {
+  color: var(--highlight);
+}
+.log-entry.error .log-msg {
+  color: var(--error);
+}

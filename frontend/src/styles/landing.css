@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════
+   Landing Page — Hero Area + Particle Background
+   ═══════════════════════════════════════════════════════════ */
+
+.landing-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Hero Content ────────────────────────────── */
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+  max-width: 780px;
+  pointer-events: auto;
+}
+
+/* ── Title ──────────────────────────────────── */
+.hero-title {
+  font-family: var(--font-mono);
+  font-size: 3.2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.35rem;
+}
+.hero-title-brand {
+  color: var(--primary);
+  text-shadow: 0 0 40px var(--primary-glow);
+}
+.hero-title-rest {
+  color: var(--text-bright);
+}
+
+/* ── Subtitles ──────────────────────────────── */
+.hero-subtitle {
+  color: var(--text-body);
+  font-size: 1.1rem;
+  margin-bottom: 0.15rem;
+}
+.hero-subtitle-cn {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-family: var(--font-mono);
+  margin-bottom: 2rem;
+}
+
+/* ── CTA Button ─────────────────────────────── */
+.hero-cta {
+  margin-bottom: 3rem;
+}
+.hero-cta-btn {
+  padding: 14px 36px;
+  font-size: 16px;
+  border-radius: var(--radius-md);
+}
+
+/* ── Feature Grid ───────────────────────────── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 1.5rem;
+}
+
+.feature-card {
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+.feature-card .feature-icon {
+  color: var(--primary);
+  margin-bottom: 0.6rem;
+  display: flex;
+  justify-content: center;
+}
+.feature-card h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 0.3rem;
+}
+.feature-card p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Glass toggle ────────────────────────────── */
+.hero-glass-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.hero-glass-toggle:hover {
+  opacity: 1;
+}
+
+/* ── Fade-in-up utility ──────────────────────── */
+.fade-in-up {
+  animation: fadeInUp 0.7s var(--ease-out) both;
+}
