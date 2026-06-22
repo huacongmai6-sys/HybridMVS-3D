@@ -25,6 +25,7 @@ from config import (
     SECRET_KEY, DEBUG, UPLOAD_FOLDER, RESULT_FOLDER,
     MAX_CONTENT_LENGTH, ALLOWED_EXTENSIONS,
     SQLALCHEMY_DATABASE_URI, VIDEO_ALLOWED_EXTENSIONS,
+    COMPARISON_FOLDER,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +46,7 @@ def create_app() -> Flask:
 
 app = create_app()
 
-from models import db, Task, init_db
+from models import db, Task, Comparison, init_db
 init_db(app)
 
 
@@ -263,6 +264,168 @@ def delete_task(task_id):
     db.session.commit()
 
     return jsonify({"status": "deleted"})
+
+
+# ── Point Cloud Comparison ──────────────────────────────────
+
+def _allowed_ply(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() == "ply"
+
+
+@app.route("/api/compare", methods=["POST"])
+def create_comparison():
+    """
+    Upload 3 PLY files and compute paper-standard comparison metrics.
+
+    Multipart form fields:
+        gt_file:      (required) Ground Truth PLY
+        colmap_file:  (required) COLMAP dense PLY
+        mvs_file:     (required) MVS network PLY
+        align:        (optional, default "false") ICP alignment
+        estimate_normal: (optional, default "true") Normal Consistency
+    """
+    # ── Validate files ────────────────────────────────────────
+    for field, label in [("gt_file", "Ground Truth"), ("colmap_file", "COLMAP"), ("mvs_file", "MVS")]:
+        f = request.files.get(field)
+        if not f or not f.filename:
+            return jsonify({"error": f"Missing file: {label}"}), 400
+        if not _allowed_ply(f.filename):
+            return jsonify({"error": f"{label} file must be a .ply file"}), 400
+
+    align = request.form.get("align", "false").lower() == "true"
+    estimate_normal = request.form.get("estimate_normal", "true").lower() == "true"
+
+    # ── Create comparison record ──────────────────────────────
+    comp_id = str(uuid.uuid4())
+    comp_dir = os.path.join(COMPARISON_FOLDER, comp_id)
+    os.makedirs(comp_dir, exist_ok=True)
+
+    comparison = Comparison(
+        id=comp_id,
+        status="pending",
+        gt_filename=request.files["gt_file"].filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1],
+        colmap_filename=request.files["colmap_file"].filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1],
+        mvs_filename=request.files["mvs_file"].filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1],
+    )
+    db.session.add(comparison)
+    db.session.commit()
+
+    # ── Save uploaded files ───────────────────────────────────
+    gt_path = os.path.join(comp_dir, "gt.ply")
+    colmap_path = os.path.join(comp_dir, "colmap.ply")
+    mvs_path = os.path.join(comp_dir, "mvs.ply")
+
+    request.files["gt_file"].save(gt_path)
+    request.files["colmap_file"].save(colmap_path)
+    request.files["mvs_file"].save(mvs_path)
+
+    # ── Compute metrics ───────────────────────────────────────
+    try:
+        from hybridmvs.evaluation.metrics import (
+            compute_comparison_metrics,
+            generate_colored_ply,
+        )
+        import numpy as np
+        from hybridmvs.fusion.dense_fusion import DenseFusion
+
+        logger.info(f"Comparison {comp_id}: computing metrics...")
+        metrics = compute_comparison_metrics(
+            reference_path=gt_path,
+            colmap_path=colmap_path,
+            mvs_path=mvs_path,
+            align=align,
+            estimate_normal=estimate_normal,
+        )
+
+        # ── Generate colored PLYs ─────────────────────────
+        gt_pts = DenseFusion.load_point_cloud(gt_path)
+        colmap_pts = DenseFusion.load_point_cloud(colmap_path)
+        mvs_pts = DenseFusion.load_point_cloud(mvs_path)
+
+        # Build distance arrays for coloring each cloud
+        # For GT: use mean of distances to both COLMAP and MVS (from the per-point data)
+        # We recompute quick distances for colouring
+
+        from scipy.spatial import cKDTree
+
+        # GT distances — average of nearest COLMAP and nearest MVS distances
+        tree_c = cKDTree(colmap_pts[:, :3])
+        tree_m = cKDTree(mvs_pts[:, :3])
+        gt_dist_c, _ = tree_c.query(gt_pts[:, :3], k=1)
+        gt_dist_m, _ = tree_m.query(gt_pts[:, :3], k=1)
+        gt_distances = (gt_dist_c + gt_dist_m) / 2.0
+
+        # COLMAP distances to GT
+        tree_gt = cKDTree(gt_pts[:, :3])
+        colmap_dist, _ = tree_gt.query(colmap_pts[:, :3], k=1)
+
+        # MVS distances to GT
+        mvs_dist, _ = tree_gt.query(mvs_pts[:, :3], k=1)
+
+        gt_colored_path = os.path.join(comp_dir, "gt_colored.ply")
+        colmap_colored_path = os.path.join(comp_dir, "colmap_colored.ply")
+        mvs_colored_path = os.path.join(comp_dir, "mvs_colored.ply")
+
+        generate_colored_ply(gt_pts[:, :3], gt_distances, gt_colored_path)
+        generate_colored_ply(colmap_pts[:, :3], colmap_dist, colmap_colored_path)
+        generate_colored_ply(mvs_pts[:, :3], mvs_dist, mvs_colored_path)
+
+        # ── Update record ─────────────────────────────────
+        import json
+        comparison.status = "completed"
+        comparison.metrics_json = json.dumps(metrics)
+        comparison.gt_colored_ply = os.path.join(comp_id, "gt_colored.ply")
+        comparison.colmap_colored_ply = os.path.join(comp_id, "colmap_colored.ply")
+        comparison.mvs_colored_ply = os.path.join(comp_id, "mvs_colored.ply")
+        db.session.commit()
+
+        logger.info(f"Comparison {comp_id}: completed")
+        return jsonify({"comparison": comparison.to_dict()}), 200
+
+    except Exception as e:
+        logger.exception(f"Comparison {comp_id}: failed — {e}")
+        comparison.status = "failed"
+        comparison.error_message = str(e)
+        db.session.commit()
+        return jsonify({"error": str(e), "comparison": comparison.to_dict()}), 500
+
+
+@app.route("/api/compare/<comparison_id>")
+def get_comparison(comparison_id):
+    """Get comparison status and metric results."""
+    comparison = db.session.get(Comparison, comparison_id)
+    if not comparison:
+        return jsonify({"error": "Comparison not found"}), 404
+    return jsonify({"comparison": comparison.to_dict()})
+
+
+@app.route("/api/compare/<comparison_id>/download/<filetype>")
+def download_comparison_result(comparison_id, filetype):
+    """Download a colored comparison PLY."""
+    comparison = db.session.get(Comparison, comparison_id)
+    if not comparison:
+        return jsonify({"error": "Comparison not found"}), 404
+    if comparison.status != "completed":
+        return jsonify({"error": "Comparison not completed"}), 400
+
+    file_map = {
+        "gt_colored": comparison.gt_colored_ply,
+        "colmap_colored": comparison.colmap_colored_ply,
+        "mvs_colored": comparison.mvs_colored_ply,
+    }
+
+    filename = file_map.get(filetype)
+    if not filename:
+        return jsonify({"error": f"Unknown file type: {filetype}. "
+                                 f"Use: gt_colored, colmap_colored, mvs_colored"}), 400
+
+    filepath = os.path.join(COMPARISON_FOLDER, filename)
+    if not os.path.isfile(filepath):
+        return jsonify({"error": "File not found"}), 404
+
+    directory = os.path.dirname(filepath)
+    basename = os.path.basename(filepath)
+    return send_from_directory(directory, basename, as_attachment=True)
 
 
 # ── Run server ───────────────────────────────────────────────

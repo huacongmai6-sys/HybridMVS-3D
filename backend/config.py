@@ -24,11 +24,10 @@ SQLALCHEMY_DATABASE_URI = os.environ.get(
     f"sqlite:///{os.path.join(BASE_DIR, 'hybridmvs.db')}",
 )
 
-# COLMAP
-COLMAP_BINARY = os.environ.get(
-    "COLMAP_BINARY",
-    os.path.join(os.path.expanduser("~"), "colmap", "bin", "colmap.exe"),
-)
+# COLMAP — set COLMAP_BINARY env var to override, or rely on auto-detection
+# Linux: apt install colmap → "colmap" in PATH
+# Windows: download from https://github.com/colmap/colmap/releases
+COLMAP_BINARY = os.environ.get("COLMAP_BINARY", "colmap")
 
 # MVS Model
 MVS_MODEL_TYPE = os.environ.get("MVS_MODEL_TYPE", "patchmatchnet")
@@ -39,6 +38,9 @@ MVS_CHECKPOINT = os.environ.get(
     "MVS_CHECKPOINT",
     os.path.join(PROJECT_DIR, "checkpoints", "model_000007.ckpt"),
 )
+
+# Point cloud comparison
+COMPARISON_FOLDER = os.path.join(RESULT_FOLDER, "comparisons")
 
 # Video processing
 VIDEO_ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv", "webm"}

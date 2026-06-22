@@ -6,6 +6,48 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+class Comparison(db.Model):
+    """Point cloud comparison result record (3-way: GT vs COLMAP vs MVS)."""
+    __tablename__ = "comparisons"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    status = db.Column(db.String(20), default="pending")  # pending, completed, failed
+    gt_filename = db.Column(db.String(500), default="")       # Ground Truth filename
+    colmap_filename = db.Column(db.String(500), default="")   # COLMAP dense filename
+    mvs_filename = db.Column(db.String(500), default="")      # MVS network filename
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Full 5-metric JSON (chamfer, accuracy/completeness, f-score, outlier, normal)
+    metrics_json = db.Column(db.Text, default="")
+
+    # Colored PLY paths (relative to COMPARISON_FOLDER)
+    gt_colored_ply = db.Column(db.String(500), default="")
+    colmap_colored_ply = db.Column(db.String(500), default="")
+    mvs_colored_ply = db.Column(db.String(500), default="")
+
+    error_message = db.Column(db.Text, default="")
+
+    def to_dict(self):
+        import json
+        try:
+            metrics = json.loads(self.metrics_json) if self.metrics_json else None
+        except (json.JSONDecodeError, TypeError):
+            metrics = None
+        return {
+            "id": self.id,
+            "status": self.status,
+            "gt_filename": self.gt_filename,
+            "colmap_filename": self.colmap_filename,
+            "mvs_filename": self.mvs_filename,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "metrics": metrics,
+            "gt_colored_ply": self.gt_colored_ply,
+            "colmap_colored_ply": self.colmap_colored_ply,
+            "mvs_colored_ply": self.mvs_colored_ply,
+            "error_message": self.error_message,
+        }
+
+
 class Task(db.Model):
     """Reconstruction task record."""
     __tablename__ = "tasks"

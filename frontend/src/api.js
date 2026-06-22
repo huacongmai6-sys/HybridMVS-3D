@@ -58,6 +58,34 @@ export function getDepthPreviewUrl(taskId, filename) {
   return `${API_BASE}/api/tasks/${taskId}/depth_previews/${filename}`;
 }
 
+// ── Point Cloud Comparison ───────────────────────────
+
+export async function uploadComparison(gtFile, colmapFile, mvsFile, align = false, estimateNormal = true) {
+  const form = new FormData();
+  form.append("gt_file", gtFile);
+  form.append("colmap_file", colmapFile);
+  form.append("mvs_file", mvsFile);
+  form.append("align", String(align));
+  form.append("estimate_normal", String(estimateNormal));
+
+  const res = await fetch(`${API_BASE}/api/compare`, { method: "POST", body: form });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Comparison failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function getComparison(comparisonId) {
+  const res = await fetch(`${API_BASE}/api/compare/${comparisonId}`);
+  if (!res.ok) throw new Error(`Fetch comparison failed: ${res.statusText}`);
+  return res.json();
+}
+
+export function getComparisonDownloadUrl(comparisonId, filetype) {
+  return `${API_BASE}/api/compare/${comparisonId}/download/${filetype}`;
+}
+
 export async function healthCheck() {
   try {
     const res = await fetch(`${API_BASE}/api/health`);

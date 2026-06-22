@@ -4,6 +4,7 @@ import ParticleField from "./components/landing/ParticleField";
 import SideNav from "./components/layout/SideNav";
 import LandingPage from "./pages/LandingPage";
 import MainPage from "./pages/MainPage";
+import ComparisonPage from "./pages/ComparisonPage";
 import "./styles/layout.css";
 
 function AppInner() {
@@ -17,11 +18,12 @@ function AppInner() {
       <ParticleField />
 
       {/* ── Collapsible side navigation ──────────────── */}
-      <SideNav onAboutOpen={() => setAboutOpen(true)} />
+      <SideNav onAboutOpen={() => setAboutOpen(true)} onNavigate={setPage} />
 
       {/* ── Main content ─────────────────────────────── */}
       {page === "landing" && <LandingPage onNavigate={setPage} />}
       {page === "reconstruct" && <MainPage />}
+      {page === "comparison" && <ComparisonPage onNavigate={setPage} />}
 
       {/* ── About modal (redesigned: fade-in / fade-out) ── */}
       {aboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}

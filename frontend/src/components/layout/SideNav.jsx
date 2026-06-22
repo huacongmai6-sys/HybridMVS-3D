@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useAppContext } from "../../context/AppContext";
 import "../../styles/layout.css";
 
-export default function SideNav({ onAboutOpen }) {
+export default function SideNav({ onAboutOpen, onNavigate }) {
   const { glassEnabled, setGlassEnabled } = useAppContext();
   const aboutBtnRef = useRef(null);
 
@@ -42,6 +42,31 @@ export default function SideNav({ onAboutOpen }) {
               </svg>
             </span>
             <span className="side-nav-text">About</span>
+          </button>
+        </li>
+
+        {/* Point Cloud Comparison */}
+        <li className="side-nav-item">
+          <button
+            className="side-nav-item-inner"
+            onClick={() => onNavigate?.("comparison")}
+          >
+            <span className="side-nav-icon-wrapper">
+              <svg className="side-nav-svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" strokeWidth="1.6"
+                   strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="5" cy="5" r="3"/>
+                <circle cx="12" cy="3" r="3"/>
+                <circle cx="19" cy="5" r="3"/>
+                <circle cx="5.5" cy="18" r="3"/>
+                <circle cx="12" cy="19" r="3"/>
+                <circle cx="19" cy="18" r="3"/>
+                <line x1="8" y1="5" x2="5.5" y2="15"/>
+                <line x1="12" y1="6" x2="11" y2="16"/>
+                <line x1="16" y1="5" x2="17" y2="15"/>
+              </svg>
+            </span>
+            <span className="side-nav-text">Evaluate</span>
           </button>
         </li>
 
