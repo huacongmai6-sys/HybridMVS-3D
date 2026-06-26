@@ -1,17 +1,24 @@
 import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { computeDepthColors } from "../../utils/colorMapping";
+import { createWaveMaterial } from "./WaveShader";
 
 /**
- * PointCloud — Renders a BufferGeometry-based point cloud.
+ * PointCloud — Renders the point cloud with a wave-reveal shader.
+ *
+ * Points are hidden by default and revealed by:
+ *   1. Breathing concentric rings expanding from top-center (primary)
+ *   2. Mouse cursor spotlight (supplemental)
  *
  * @param {{ pointData: { positions, colors, count, center, extent } | null,
- *            colorMode: "rgb" | "depth" | "confidence" }} props
+ *            colorMode: "rgb" | "depth" | "confidence",
+ *            mouseRef: React.RefObject<{{ x: number, y: number }}> }} props
  */
-export default function PointCloud({ pointData, colorMode = "rgb" }) {
+export default function PointCloud({ pointData, colorMode = "rgb", mouseRef }) {
   const ref = useRef();
 
-  /* Build geometry and colors based on colorMode */
+  /* Build geometry once per pointData/colorMode change */
   const { geo, mat } = useMemo(() => {
     if (!pointData || pointData.count === 0) return { geo: null, mat: null };
 
@@ -47,16 +54,36 @@ export default function PointCloud({ pointData, colorMode = "rgb" }) {
     geo.setAttribute("color", new THREE.Float32BufferAttribute(colorArr, 3));
 
     const pointSize = pointData.extent * 0.004;
-    const mat = new THREE.PointsMaterial({
-      size: pointSize,
-      vertexColors: true,
-      sizeAttenuation: true,
-      blending: THREE.NormalBlending,
-      depthWrite: true,
-    });
+    const mat = createWaveMaterial(pointSize, pointData.extent);
 
     return { geo, mat };
   }, [pointData, colorMode]);
+
+  /* Per-frame uniform updates */
+  useFrame(({ clock, size: viewport, gl: renderer }) => {
+    if (!mat) return;
+
+    // Elapsed time — drives the breathing wave animation
+    mat.uniforms.uTime.value = clock.getElapsedTime();
+
+    // Viewport resolution (for aspect-corrected distance calculations)
+    const dpr = renderer.getPixelRatio();
+    mat.uniforms.uResolution.value.set(
+      viewport.width * dpr,
+      viewport.height * dpr
+    );
+
+    // Size attenuation scale (matches THREE.PointsMaterial behavior)
+    mat.uniforms.uScale.value = viewport.height * dpr * 0.5;
+
+    // Mouse NDC position
+    if (mouseRef?.current) {
+      mat.uniforms.uMouse.value.set(
+        mouseRef.current.x,
+        mouseRef.current.y
+      );
+    }
+  });
 
   if (!geo) return null;
 

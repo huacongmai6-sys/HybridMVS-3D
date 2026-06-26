@@ -1,27 +1,29 @@
-import { useAppContext } from "../../context/AppContext";
 import "./HeroContent.css";
 
 export default function HeroContent({ onStart }) {
-  const { setGlassEnabled, glassEnabled } = useAppContext();
-
   return (
     <div className="hero-content">
-      {/* ── Title ─────────────────────────────── */}
-      <h1 className="hero-title fade-in-up">
-        <span className="hero-title-brand">Hybrid</span>
-        <span className="hero-title-rest">MVS</span>
-      </h1>
+      {/* ── Badge ─────────────────────────────── */}
+      <span className="hero-badge fade-in-up">3D Reconstruction</span>
+
+      {/* ── Title with breathing glow ─────────── */}
+      <div className="hero-title-wrapper fade-in-up stagger-1">
+        <h1 className="hero-title">
+          <span className="hero-title-brand">Hybrid</span>
+          <span className="hero-title-rest">MVS</span>
+        </h1>
+      </div>
 
       {/* ── Subtitle ──────────────────────────── */}
-      <p className="hero-subtitle fade-in-up stagger-1">
+      <p className="hero-subtitle fade-in-up stagger-2">
         Hybrid 3D Reconstruction System
       </p>
-      <p className="hero-subtitle-cn fade-in-up stagger-1">
+      <p className="hero-subtitle-cn fade-in-up stagger-2">
         COLMAP SfM + CasMVSNet + DenseFusion
       </p>
 
       {/* ── CTA ───────────────────────────────── */}
-      <div className="hero-cta fade-in-up stagger-2">
+      <div className="hero-cta fade-in-up stagger-3">
         <button className="btn-primary hero-cta-btn" onClick={onStart}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -33,7 +35,7 @@ export default function HeroContent({ onStart }) {
       </div>
 
       {/* ── Feature highlights ────────────────── */}
-      <div className="feature-grid fade-in-up stagger-3">
+      <div className="feature-grid fade-in-up stagger-4">
         <div className="glass-card feature-card">
           <div className="feature-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -83,15 +85,6 @@ export default function HeroContent({ onStart }) {
           <p>基于 Three.js 的实时点云查看器，支持旋转缩放平移</p>
         </div>
       </div>
-
-      {/* ── Glass toggle (subtle) ─────────────── */}
-      <button
-        className="hero-glass-toggle fade-in-up stagger-4"
-        onClick={() => setGlassEnabled(!glassEnabled)}
-        title={glassEnabled ? "关闭毛玻璃效果" : "开启毛玻璃效果"}
-      >
-        {glassEnabled ? "毛玻璃 · 开" : "毛玻璃 · 关"}
-      </button>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getDownloadUrl } from "../../api";
 import { parsePLY } from "../../utils/plyParser";
 import Scene from "./Scene";

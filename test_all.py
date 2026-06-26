@@ -15,7 +15,9 @@ import sys
 import numpy as np
 import cv2
 
-sys.path.insert(0, 'd:/HybridMVS')
+# Project root is the directory containing this script
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_ROOT)
 
 passed = 0
 failed = 0
@@ -125,8 +127,10 @@ try:
     check(f"Fused: {len(pts_filtered)} points", len(pts_filtered) > 0)
 
     # Save PLY
-    fusion.save_point_cloud(pts_filtered, "d:/HybridMVS/test_output/test.ply", fmt="ply")
-    check("PLY export", os.path.isfile("d:/HybridMVS/test_output/test.ply"))
+    test_output_dir = os.path.join(PROJECT_ROOT, "test_output")
+    os.makedirs(test_output_dir, exist_ok=True)
+    fusion.save_point_cloud(pts_filtered, os.path.join(test_output_dir, "test.ply"), fmt="ply")
+    check("PLY export", os.path.isfile(os.path.join(test_output_dir, "test.ply")))
 
 except Exception as e:
     check(f"MVS + Fusion pipeline - {e}", False)
@@ -135,16 +139,17 @@ except Exception as e:
 print("\n[4] COLMAP Error Handling")
 try:
     engine = ColmapEngine(
-        workspace_dir="d:/HybridMVS/test_colmap_error",
-        colmap_binary="C:/Users/45310/colmap/bin/colmap.exe",
+        workspace_dir=os.path.join(PROJECT_ROOT, "test_colmap_error"),
+        colmap_binary=None,  # auto-detect
     )
 
     # Run feature extraction on a temp dir with one image (should fail at matching)
     # Actually just test that the engine is created correctly
-    check("COLMAP engine created", engine.colmap_binary.endswith("colmap.exe"))
+    check("COLMAP engine created", engine.colmap_binary is not None)
 
     # Test camera model parsing (COLMAP 4.x format with model name)
-    test_cam_path = "d:/HybridMVS/test_colmap_error/cameras.txt"
+    test_cam_dir = os.path.join(PROJECT_ROOT, "test_colmap_error")
+    test_cam_path = os.path.join(test_cam_dir, "cameras.txt")
     os.makedirs(os.path.dirname(test_cam_path), exist_ok=True)
     with open(test_cam_path, 'w') as f:
         f.write("# test\n1 SIMPLE_RADIAL 640 480 800.0 320 240 -0.1\n")

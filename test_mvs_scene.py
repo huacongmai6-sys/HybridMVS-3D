@@ -5,8 +5,9 @@ Scene: textured ground plane + several colored spheres at different depths.
 
 import os, sys, numpy as np, cv2
 
-sys.path.insert(0, 'd:/HybridMVS')
-output_dir = "d:/HybridMVS/test_mvs_scene"
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_ROOT)
+output_dir = os.path.join(PROJECT_ROOT, "test_mvs_scene")
 os.makedirs(output_dir, exist_ok=True)
 
 w, h = 1600, 1200

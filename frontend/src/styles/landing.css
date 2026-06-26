@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Landing Page — Hero Area + Particle Background
+   Landing Page — Hero Area + Atmosphere Background Layers
    ═══════════════════════════════════════════════════════════ */
 
 .landing-page {
@@ -12,7 +12,69 @@
   overflow: hidden;
 }
 
-/* ── Hero Content ────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   Glow Orbs — 氛围光斑背景层
+   ═══════════════════════════════════════════════════════════ */
+.glow-orbs {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.glow-orb {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.15;
+  will-change: transform;
+}
+
+.glow-orb--1 {
+  top: -120px;
+  left: -100px;
+  background: radial-gradient(circle, var(--primary), transparent);
+  animation: orbFloat1 14s ease-in-out infinite;
+}
+
+.glow-orb--2 {
+  bottom: -150px;
+  right: -120px;
+  background: radial-gradient(circle, var(--highlight), transparent);
+  animation: orbFloat2 18s ease-in-out infinite;
+}
+
+.glow-orb--3 {
+  top: 35%;
+  left: 55%;
+  background: radial-gradient(circle, var(--orb-accent), transparent);
+  animation: orbFloat3 16s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Noise Overlay — 微噪点纹理叠加层
+   ═══════════════════════════════════════════════════════════ */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  /* CSS-only noise: tiny repeating conic gradient scaled up */
+  background-image:
+    repeating-conic-gradient(
+      rgba(255,255,255,0.02) 0% 5%,
+      transparent 5% 10%
+    );
+  background-size: 3px 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Hero Content
+   ═══════════════════════════════════════════════════════════ */
 .hero-content {
   position: relative;
   z-index: 1;
@@ -22,13 +84,51 @@
   pointer-events: auto;
 }
 
+/* ── Badge ──────────────────────────────────── */
+.hero-badge {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 20px;
+  background: var(--primary-soft);
+  border: 1px solid var(--border-accent);
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.8rem;
+  text-transform: uppercase;
+}
+
+/* ── Title wrapper (breathing glow behind) ──── */
+.hero-title-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.35rem;
+}
+.hero-title-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 420px;
+  height: 120px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, var(--primary), transparent 70%);
+  filter: blur(40px);
+  opacity: 0.35;
+  pointer-events: none;
+  animation: titleGlow 4s ease-in-out infinite;
+}
+
 /* ── Title ──────────────────────────────────── */
 .hero-title {
   font-family: var(--font-mono);
   font-size: 3.2rem;
   font-weight: 700;
   letter-spacing: -0.03em;
-  margin-bottom: 0.35rem;
+  position: relative;
+  z-index: 1;
 }
 .hero-title-brand {
   color: var(--primary);
@@ -59,6 +159,13 @@
   padding: 14px 36px;
   font-size: 16px;
   border-radius: var(--radius-md);
+  position: relative;
+  transition: box-shadow var(--duration-normal) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+.hero-cta-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 32px var(--primary-glow), 0 0 64px rgba(79, 140, 255, 0.2);
 }
 
 /* ── Feature Grid ───────────────────────────── */
@@ -66,19 +173,40 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  margin-bottom: 1.5rem;
 }
 
 .feature-card {
   padding: 1.25rem 1rem;
   text-align: center;
+  transition: transform var(--duration-normal) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
 }
+.feature-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--border-accent);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(79, 140, 255, 0.08);
+}
+
+/* ── Feature icon container ─────────────────── */
 .feature-card .feature-icon {
-  color: var(--primary);
-  margin-bottom: 0.6rem;
   display: flex;
+  align-items: center;
   justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 0.7rem auto;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  transition: background var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
 }
+.feature-card:hover .feature-icon {
+  background: rgba(79, 140, 255, 0.15);
+  box-shadow: 0 0 20px rgba(79, 140, 255, 0.2);
+}
+
 .feature-card h3 {
   font-size: 0.85rem;
   font-weight: 600;
@@ -89,21 +217,6 @@
   font-size: 0.75rem;
   color: var(--text-muted);
   line-height: 1.4;
-}
-
-/* ── Glass toggle ────────────────────────────── */
-.hero-glass-toggle {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-family: var(--font-body);
-  cursor: pointer;
-  opacity: 0.5;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-.hero-glass-toggle:hover {
-  opacity: 1;
 }
 
 /* ── Fade-in-up utility ──────────────────────── */

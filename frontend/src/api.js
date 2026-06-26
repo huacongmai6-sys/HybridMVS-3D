@@ -1,5 +1,5 @@
 /** API client for HybridMVS backend. */
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 export async function uploadImages(files, quality = "high", mode = "colmap") {
   const form = new FormData();

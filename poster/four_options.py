@@ -8,7 +8,7 @@ Side-by-side comparison: 4 point cloud options for HybridMVS poster
 2x2 grid, each rendered in Tiffany Blue + Cheese point cloud style.
 """
 
-import math, random
+import math, random, os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -18,8 +18,8 @@ GAP = 40
 CANVAS_W = PANEL_W * 2 + GAP * 3
 CANVAS_H = PANEL_H * 2 + GAP * 3
 
-OUTPUT = "d:/项目实践/罗版本/HybridMVS/poster/4_options_comparison.png"
-FONTS_DIR = r"C:\Users\xiaomai\.claude\skills\canvas-design\canvas-fonts"
+OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "4_options_comparison.png")
+FONTS_DIR = os.path.join(os.path.expanduser("~"), ".claude", "skills", "canvas-design", "canvas-fonts")
 
 TIFFANY   = (0x80, 0xD1, 0xC8)
 TIFFANY_B = (0x50, 0xC0, 0xB5)

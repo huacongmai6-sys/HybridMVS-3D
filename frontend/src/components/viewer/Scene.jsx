@@ -1,5 +1,5 @@
-import { useRef, useEffect } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import PointCloud from "./PointCloud";
 
@@ -24,6 +24,9 @@ function CameraSetup({ center, extent }) {
 
 /**
  * SceneInner — renders inside the R3F Canvas.
+ *
+ * Tracks mouse NDC from R3F's internal pointer state and passes
+ * it as a ref to the PointCloud shader for the mouse-reveal spotlight.
  */
 function SceneInner({
   pointData,
@@ -31,12 +34,18 @@ function SceneInner({
   orbitRef,
   autoRotate,
 }) {
+  /* Mouse NDC tracking via R3F's internal pointer state */
+  const mouseRef = useRef({ x: -99, y: -99 });
+
+  useFrame((state) => {
+    mouseRef.current.x = state.pointer.x;
+    mouseRef.current.y = state.pointer.y;
+  });
+
   return (
     <>
-      {/* ── Lighting ──────────────────────────── */}
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[8, 15, 8]} intensity={0.55} />
-      <directionalLight position={[-5, -3, -5]} intensity={0.15} />
+      {/* ── Ultra-subtle ambient (ShaderMaterial ignores, kept for any future lit meshes) ── */}
+      <ambientLight intensity={0.1} />
 
       {/* ── Orbit Controls ────────────────────── */}
       {pointData && (
@@ -58,25 +67,33 @@ function SceneInner({
         />
       )}
 
-      {/* ── Ground Grid ───────────────────────── */}
+      {/* ── Ultra-subtle grid — barely visible on pure black ── */}
       {pointData && (
         <Grid
-          position={[pointData.center[0], pointData.center[1] - pointData.extent * 0.5, pointData.center[2]]}
+          position={[
+            pointData.center[0],
+            pointData.center[1] - pointData.extent * 0.5,
+            pointData.center[2],
+          ]}
           cellSize={pointData.extent * 0.1}
-          cellThickness={0.5}
-          cellColor="#243044"
+          cellThickness={0.3}
+          cellColor="#0a0d12"
           sectionSize={pointData.extent * 0.5}
-          sectionThickness={1.5}
-          sectionColor="#1A2332"
+          sectionThickness={0.8}
+          sectionColor="#0f131a"
           fadeDistance={pointData.extent * 3}
           infiniteGrid
         />
       )}
 
-      {/* ── Point Cloud ───────────────────────── */}
-      <PointCloud pointData={pointData} colorMode={colorMode} />
+      {/* ── Point Cloud with wave-reveal shader ── */}
+      <PointCloud
+        pointData={pointData}
+        colorMode={colorMode}
+        mouseRef={mouseRef}
+      />
 
-      {/* ── Camera ─────────────────────────────── */}
+      {/* ── Camera sync ────────────────────────── */}
       {pointData && (
         <CameraSetup center={pointData.center} extent={pointData.extent} />
       )}
@@ -87,7 +104,12 @@ function SceneInner({
 /**
  * Scene — R3F Canvas wrapper.
  */
-export default function Scene({ pointData, colorMode, orbitRef, autoRotate }) {
+export default function Scene({
+  pointData,
+  colorMode,
+  orbitRef,
+  autoRotate,
+}) {
   return (
     <Canvas
       camera={{
@@ -97,7 +119,7 @@ export default function Scene({ pointData, colorMode, orbitRef, autoRotate }) {
       }}
       up={[0, -1, 0]}
       gl={{ antialias: true, alpha: false }}
-      style={{ background: "#0B1020", cursor: pointData ? "grab" : "default" }}
+      style={{ background: "#000000", cursor: pointData ? "grab" : "default" }}
     >
       <SceneInner
         pointData={pointData}

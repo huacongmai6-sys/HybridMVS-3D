@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppProvider, useAppContext } from "./context/AppContext";
-import ParticleField from "./components/landing/ParticleField";
+import DotWaveBackground from "./components/DotWaveBackground";
 import SideNav from "./components/layout/SideNav";
 import LandingPage from "./pages/LandingPage";
 import MainPage from "./pages/MainPage";
@@ -14,8 +14,8 @@ function AppInner() {
 
   return (
     <>
-      {/* ── Particle background (always, behind everything) ── */}
-      <ParticleField />
+      {/* ── Dot-wave background (always, behind everything) ── */}
+      <DotWaveBackground />
 
       {/* ── Collapsible side navigation ──────────────── */}
       <SideNav onAboutOpen={() => setAboutOpen(true)} onNavigate={setPage} />

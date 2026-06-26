@@ -1,6 +1,6 @@
 """Verify all HybridMVS modules import and instantiate correctly."""
-import sys
-sys.path.insert(0, 'd:/HybridMVS')
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 print("Testing module imports...")
 
@@ -27,7 +27,7 @@ print("  mvs_network.modules: OK")
 from hybridmvs.mvs_network.mvsnet import MVSNet, mvsnet_loss
 print("  mvs_network.mvsnet: OK")
 
-from hybridmvs.mvs_network.cas_mvsnet import CasMVSNet, casmvsnet_loss
+from hybridmvs.mvs_network.cas_mvsnet import CasMVSNet
 print("  mvs_network.cas_mvsnet: OK")
 
 from hybridmvs.mvs_network.inference import MVSInference, MVSConfig

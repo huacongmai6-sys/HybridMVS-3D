@@ -14,7 +14,8 @@ import sys
 import numpy as np
 import cv2
 
-sys.path.insert(0, 'd:/HybridMVS')
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_ROOT)
 
 from hybridmvs.mvs_network import MVSInference
 from hybridmvs.mvs_network.inference import MVSConfig
@@ -177,7 +178,7 @@ def main():
     print("HybridMVS - End-to-End Pipeline Test")
     print("=" * 60)
 
-    output_dir = "d:/HybridMVS/test_output"
+    output_dir = os.path.join(PROJECT_ROOT, "test_output")
     os.makedirs(output_dir, exist_ok=True)
 
     # ── 1. Generate synthetic scene ───────────────────────

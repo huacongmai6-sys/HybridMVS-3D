@@ -1,12 +1,24 @@
 """
 Convert PyTorch Lightning CasMVSNet checkpoint to our model format.
+
+Usage:
+    python convert_checkpoint.py /path/to/checkpoint.ckpt [output.pth]
 """
 
 import torch
 import sys
+import os
 
-ckpt_path = "d:/HybridMVS/checkpoints/_ckpt_epoch_10.ckpt"
-output_path = "d:/HybridMVS/checkpoints/casmvsnet_dtu.pth"
+# Default paths relative to project root
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+ckpt_path = os.path.join(PROJECT_ROOT, "checkpoints", "_ckpt_epoch_10.ckpt")
+output_path = os.path.join(PROJECT_ROOT, "checkpoints", "casmvsnet_dtu.pth")
+
+# Allow command-line override
+if len(sys.argv) >= 2:
+    ckpt_path = sys.argv[1]
+if len(sys.argv) >= 3:
+    output_path = sys.argv[2]
 
 print(f"Loading: {ckpt_path}")
 ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=True)
@@ -30,7 +42,7 @@ for k, v in state.items():
 print(f"Checkpoint keys after cleaning: {len(new_state)}")
 
 # Load our model
-sys.path.insert(0, "d:/HybridMVS")
+sys.path.insert(0, PROJECT_ROOT)
 from hybridmvs.mvs_network import CasMVSNet
 
 model = CasMVSNet(base_channels=8, feat_channels=32)

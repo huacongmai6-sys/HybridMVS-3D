@@ -25,9 +25,11 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-# Known COLMAP download URLs for Windows
+# Known COLMAP download URLs
 COLMAP_URLS = {
     "windows": "https://github.com/colmap/colmap/releases/download/4.0.4/colmap-x64-windows-cuda.zip",
+    # Linux: prefer system package manager (apt install colmap)
+    # macOS: brew install colmap
 }
 
 
@@ -64,32 +66,73 @@ class ColmapEngine:
         self.single_camera = single_camera
         self.gpu_index = gpu_index
         self.colmap_binary = colmap_binary or self._find_colmap()
+        self._is_v4 = self._detect_v4()
+
+    def _detect_v4(self) -> bool:
+        """Try v4 option naming; if it works, return True, else False."""
+        # Run a quick no-op-ish command that probes the option namespace.
+        # COLMAP 4.x renamed FeatureExtraction → SiftExtraction, FeatureMatching → SiftMatching.
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test.db")
+            try:
+                result = subprocess.run(
+                    [self.colmap_binary, "feature_extractor",
+                     "--database_path", db_path,
+                     "--image_path", tmpdir,
+                     "--SiftExtraction.use_gpu", "1"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                # "unrecognised option" means v3; any other error (e.g. no images) means v4 accepted the option
+                if "unrecognised option" in (result.stderr or ""):
+                    return False
+                return True
+            except Exception:
+                return False
 
     def _find_colmap(self) -> str:
         """Locate COLMAP executable, downloading if necessary."""
-        # Check PATH
+        # Check PATH first (works on Linux/macOS, and Windows if in PATH)
         result = shutil.which("colmap")
         if result:
             logger.info(f"Found COLMAP in PATH: {result}")
             return result
 
-        # Check common install locations on Windows
-        common_paths = [
-            os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "COLMAP", "bin", "colmap.exe"),
-            os.path.join(os.environ.get("LOCALAPPDATA", ""), "COLMAP", "bin", "colmap.exe"),
-            os.path.expanduser("~\\colmap\\bin\\colmap.exe"),
-        ]
+        # Platform-specific common install locations
+        if sys.platform == "win32":
+            common_paths = [
+                os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "COLMAP", "bin", "colmap.exe"),
+                os.path.join(os.environ.get("LOCALAPPDATA", ""), "COLMAP", "bin", "colmap.exe"),
+                os.path.expanduser("~\\colmap\\bin\\colmap.exe"),
+            ]
+        else:
+            # Linux / macOS common locations
+            common_paths = [
+                "/usr/bin/colmap",
+                "/usr/local/bin/colmap",
+                os.path.expanduser("~/colmap/bin/colmap"),
+                os.path.expanduser("~/.local/bin/colmap"),
+            ]
+
         for p in common_paths:
             if os.path.isfile(p):
                 logger.info(f"Found COLMAP at: {p}")
                 return p
 
-        # Auto-download
-        logger.info("COLMAP not found, attempting auto-download...")
-        return self._download_colmap()
+        # Auto-download (Windows only; Linux/macOS should use package manager)
+        if sys.platform == "win32":
+            logger.info("COLMAP not found, attempting auto-download...")
+            return self._download_colmap()
+        else:
+            raise FileNotFoundError(
+                "COLMAP not found. Install it via your package manager:\n"
+                "  Linux:   sudo apt install colmap\n"
+                "  macOS:   brew install colmap\n"
+                "Or set the COLMAP_BINARY environment variable to the colmap executable path."
+            )
 
     def _download_colmap(self) -> str:
-        """Download COLMAP for Windows."""
+        """Download COLMAP (Windows only — auto-downloads the prebuilt binary)."""
         colmap_dir = os.path.join(os.path.expanduser("~"), "colmap")
         os.makedirs(colmap_dir, exist_ok=True)
 
@@ -105,14 +148,15 @@ class ColmapEngine:
 
         os.remove(zip_path)
 
-        # Find the colmap.exe binary
+        # Find the colmap binary
+        binary_name = "colmap.exe" if sys.platform == "win32" else "colmap"
         for root, dirs, files in os.walk(colmap_dir):
-            if "colmap.exe" in files:
-                exe_path = os.path.join(root, "colmap.exe")
+            if binary_name in files:
+                exe_path = os.path.join(root, binary_name)
                 logger.info(f"COLMAP installed to: {exe_path}")
                 return exe_path
 
-        raise FileNotFoundError("Could not find colmap.exe after extraction")
+        raise FileNotFoundError(f"Could not find {binary_name} after extraction")
 
     def _run_command(self, *args, allow_failure: bool = False) -> subprocess.CompletedProcess:
         """Run a COLMAP command with proper error handling."""
@@ -146,15 +190,27 @@ class ColmapEngine:
         """
         os.makedirs(self.workspace_dir, exist_ok=True)
 
-        self._run_command(
-            "feature_extractor",
-            "--database_path", self.database_path,
-            "--image_path", image_dir,
-            "--ImageReader.single_camera", "1" if self.single_camera else "0",
-            "--ImageReader.camera_model", self.camera_model,
-            "--FeatureExtraction.use_gpu", "1",
-            "--FeatureExtraction.gpu_index", str(self.gpu_index),
-        )
+        if self._is_v4:
+            # COLMAP 4.x renamed FeatureExtraction → SiftExtraction
+            self._run_command(
+                "feature_extractor",
+                "--database_path", self.database_path,
+                "--image_path", image_dir,
+                "--ImageReader.single_camera", "1" if self.single_camera else "0",
+                "--ImageReader.camera_model", self.camera_model,
+                "--SiftExtraction.use_gpu", "1",
+                "--SiftExtraction.gpu_index", str(self.gpu_index),
+            )
+        else:
+            self._run_command(
+                "feature_extractor",
+                "--database_path", self.database_path,
+                "--image_path", image_dir,
+                "--ImageReader.single_camera", "1" if self.single_camera else "0",
+                "--ImageReader.camera_model", self.camera_model,
+                "--FeatureExtraction.use_gpu", "1",
+                "--FeatureExtraction.gpu_index", str(self.gpu_index),
+            )
 
     def match_features(self, match_type: str = "exhaustive") -> None:
         """
@@ -163,24 +219,29 @@ class ColmapEngine:
         Args:
             match_type: Matching strategy ("exhaustive", "sequential", "spatial", "vocab_tree").
         """
+        if self._is_v4:
+            gpu_block = "SiftMatching"
+        else:
+            gpu_block = "FeatureMatching"
+
         if match_type == "exhaustive":
             self._run_command(
                 "exhaustive_matcher",
                 "--database_path", self.database_path,
-                "--FeatureMatching.use_gpu", "1",
-                "--FeatureMatching.gpu_index", str(self.gpu_index),
+                f"--{gpu_block}.use_gpu", "1",
+                f"--{gpu_block}.gpu_index", str(self.gpu_index),
             )
         elif match_type == "sequential":
             self._run_command(
                 "sequential_matcher",
                 "--database_path", self.database_path,
-                "--FeatureMatching.use_gpu", "1",
+                f"--{gpu_block}.use_gpu", "1",
             )
         elif match_type == "vocab_tree":
             self._run_command(
                 "vocab_tree_matcher",
                 "--database_path", self.database_path,
-                "--FeatureMatching.use_gpu", "1",
+                f"--{gpu_block}.use_gpu", "1",
             )
         else:
             raise ValueError(f"Unknown match type: {match_type}")
